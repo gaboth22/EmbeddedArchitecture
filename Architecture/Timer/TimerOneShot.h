@@ -1,5 +1,5 @@
-#ifndef TIMER_ONESHOT_H
-#define TIMER_ONESHOT_H
+#ifndef TIMERONESHOT_H
+#define TIMERONESHOT_H
 
 #include "TimerModule.h"
 #include "EventSubscriber_Synchronous.h"

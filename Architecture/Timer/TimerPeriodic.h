@@ -1,5 +1,5 @@
-#ifndef TIMER_PERIODIC_H
-#define TIMER_PERIODIC_H
+#ifndef TIMERPERIODIC_H
+#define TIMERPERIODIC_H
 
 #include "TimerModule.h"
 #include "EventSubscriber_Synchronous.h"
