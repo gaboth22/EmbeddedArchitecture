@@ -7,26 +7,19 @@ extern "C"
 #include "utils.h"
 }
 
-LinkedList_t list;
-LinkedListNode_t node;
-
-static void InitializeList()
-{
-	LinkedList_Init(&list);
-}
-
 TEST_GROUP(LinkedListTests)
 {
-};
+	LinkedList_t list;
+	LinkedListNode_t node;
 
-TEST(LinkedListTests, ListShouldInitializeFine)
-{
-	InitializeList();
-}
+	void setup()
+	{
+		LinkedList_Init(&list);
+	}
+};
 
 TEST(LinkedListTests, InsertWhenListIsEmptyShouldSucceed)
 {
-	InitializeList();
 	LinkedListNode_Init(&node, NULL);
 	LinkedList_Insert(&list, &node);
 }
@@ -38,7 +31,6 @@ static void GetIntData(LinkedListNode_t *node, void *data)
 
 TEST(LinkedListTests, ShouldBeAbleToGetDataAfterInsertion)
 {
-	InitializeList();
 	int insertedData = 10;
 	LinkedListNode_Init(&node, (void*)(&insertedData));
 	LinkedList_Insert(&list, &node);
@@ -49,7 +41,6 @@ TEST(LinkedListTests, ShouldBeAbleToGetDataAfterInsertion)
 
 TEST(LinkedListTests, RemovalOfHeadShouldMakeHeadNull)
 {
-	InitializeList();
 	LinkedListNode_Init(&node, NULL);
 	LinkedList_Insert(&list, &node);
 	LinkedList_Remove(&list, &node);
