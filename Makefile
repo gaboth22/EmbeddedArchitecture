@@ -7,6 +7,7 @@ INC=Architecture/ \
 	Architecture/DataStructures \
 	Architecture/Event \
 	Architecture/HardwareAbstractions \
+	Architecture/HardwareConcretions \
 	Architecture/Timer \
 	Architecture/TimerModule \
 	Architecture/Utilities \
@@ -17,11 +18,13 @@ INC=Architecture/ \
 CPP_SRC=Test/main.cpp \
 		Test/DataStructures/*.cpp \
 		Test/Doubles/*.cpp \
+		Test/HardwareConcretions/*.cpp \
 		Test/Timer/*.cpp
 
 #Add C source files here
 C_SRC=Architecture/DataStructures/*.c \
 	Architecture/Event/*.c \
+	Architecture/HardwareConcretions/*.c \
 	Architecture/Timer/*.c \
 	Architecture/TimerModule/*.c
 
