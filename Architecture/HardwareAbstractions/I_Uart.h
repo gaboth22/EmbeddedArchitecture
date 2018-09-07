@@ -1,6 +1,7 @@
 #ifndef I_UART_H
 #define I_UART_H
 
+#include "I_Event.h"
 #include "types.h"
 
 typedef struct _UartApi_t UartApi_t;
@@ -10,7 +11,7 @@ typedef struct
 	const UartApi_t *api;
 } I_Uart_t;
 
-struct _UartApit_t
+struct _UartApi_t
 {
 	/*
 	 * Send one byte via the UART peripheral
