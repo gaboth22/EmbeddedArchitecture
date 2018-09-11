@@ -1,7 +1,7 @@
 #ifndef HEARTBEATLED_H
 #define HEARTBEATLED_H
 
-#include "../Timer/TimerPeriodic.h"
+#include "TimerPeriodic.h"
 #include "I_GpioGroup.h"
 #include "TimerModule.h"
 #include "types.h"

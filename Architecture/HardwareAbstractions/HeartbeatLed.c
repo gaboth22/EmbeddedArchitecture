@@ -1,7 +1,5 @@
 #include "HeartbeatLed.h"
-
-#include "../Timer/TimerPeriodic.h"
-#include "GpioTable.h"
+#include "TimerPeriodic.h"
 #include "I_GpioGroup.h"
 #include "TimerModule.h"
 #include "utils.h"
@@ -11,7 +9,7 @@ static void ToggleLed(void *context)
     RECAST(instance, context, HeartbeatLed_t *);
 
     instance->currentState = (GpioState_t)(!instance->currentState);
-    GpioGroup_SetState(instance->gpioGroup, GpioHeartbeatLed, instance->currentState);
+    GpioGroup_SetState(instance->gpioGroup, instance->channelToToggle, instance->currentState);
 }
 
 void HeartbeatLed_Init(
