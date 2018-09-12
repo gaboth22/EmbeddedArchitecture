@@ -6,11 +6,12 @@
 typedef struct _GpioGroupApi_t GpioGroupApi_t;
 typedef uint8_t GpioChannel_t;
 
-typedef enum
+enum GpioState
 {
     GpioState_Low = 0,
     GpioState_High = 1
-} GpioState_t;
+};
+typedef uint8_t GpioState_t;
 
 typedef struct
 {
