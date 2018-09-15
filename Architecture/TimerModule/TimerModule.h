@@ -4,7 +4,7 @@
 #include "I_TimeSource.h"
 #include "types.h"
 
-typedef uint32_t TimerTicks_t;
+typedef uint64_t TimerTicks_t;
 
 typedef struct
 {

@@ -45,7 +45,7 @@ static void PollCameraForCaptureDone(void *context)
 	RECAST(instance, context, Camera_OV264I2cAndSpiCom_t *);
 
 	Spi_SendByte(instance->dataSpi, CamCaptureRegisterAddress & 0x7F);
-	uint8_t captureDone = Spi_GetByte(instance->dataSpi, 0xFF) & CamCaptureDoneMask;
+	uint8_t captureDone = Spi_GetByte(instance->dataSpi) & CamCaptureDoneMask;
 
 	if((bool)captureDone)
 	{
@@ -56,9 +56,9 @@ static void PollCameraForCaptureDone(void *context)
 		uint16_t totalLength = 0;
 
 		Spi_SendByte(instance->dataSpi, CamFifoSizeRegAddress1 & 0x7F);
-		len1 = Spi_GetByte(instance->dataSpi, 0xFF);
+		len1 = Spi_GetByte(instance->dataSpi);
 		Spi_SendByte(instance->dataSpi, CamFifoSizeRegAddress2 & 0x7F);
-		len2 = Spi_GetByte(instance->dataSpi, 0xFF);
+		len2 = Spi_GetByte(instance->dataSpi);
 
 		totalLength = ((len2 << 8) | len1);
 

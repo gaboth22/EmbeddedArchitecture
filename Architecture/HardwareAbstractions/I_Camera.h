@@ -1,5 +1,5 @@
 #ifndef I_CAMERA_H
-#define I_CAMERA_h
+#define I_CAMERA_H
 
 #include "I_Event.h"
 #include "types.h"

@@ -1,8 +1,6 @@
-#include <StepperMotor.h>
-
-#include "../Timer/TimerOneShot.h"
-#include "../Timer/TimerPeriodic.h"
-#include "GpioTable.h"
+#include "StepperMotor.h"
+#include "TimerOneShot.h"
+#include "TimerPeriodic.h"
 #include "utils.h"
 
 enum

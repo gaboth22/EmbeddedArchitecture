@@ -29,9 +29,8 @@ struct _SpiApi_t
     /*
      * Get one byte via SPI peripheral
      * @param instance The SPI instance
-     * @param byteToPutOnBus byte to put on bus when in order to receive one byte
      */
-    uint8_t (*GetByte)(I_Spi_t *instance, uint8_t byteToPutOnBus);
+    uint8_t (*GetByte)(I_Spi_t *instance);
 
     /*
      * Start burst receive operation
@@ -54,8 +53,8 @@ struct _SpiApi_t
 #define Spi_SendByte(_instance, _byteToWrite) \
         (_instance)->api->SendByte(_instance, _byteToWrite) \
 
-#define Spi_GetByte(_instance, _byteToPutOnBus) \
-        (_instance)->api->GetByte(_instance, _byteToPutOnBus) \
+#define Spi_GetByte(_instance) \
+        (_instance)->api->GetByte(_instance) \
 
 #define Spi_StartBurstReceive(_instance, _dest, _size) \
         (_instance)->api->StartBurstReceive(_instance, _dest, _size) \
