@@ -14,14 +14,18 @@
 typedef struct
 {
 	I_Camera_t interface;
-	I_I2c_t *configI2c;
-	I_Spi_t *dataSpi;
 	GpioChannel_t spiCsChannel;
 	Event_Synchronous_t onImageCaptureDoneEvent;
-	uint8_t registerDataIndex;
-	TimerPeriodic_t checkIfCameraCaptureIsDoneTimer;
+	TimerPeriodic_t configTimer;
+	TimerPeriodic_t pollTimer;
 	EventSubscriber_Synchronous_t spiBurstReceiveDoneSubscriber;
 	CameraImage_t currentImageData;
+    I_I2c_t *configI2c;
+    I_Spi_t *dataSpi;
+    TimerModule_t *timerModule;
+	uint8_t registerDataIndex;
+	uint8_t cameraConfigState;
+	bool busy;
 } Camera_OV264I2cAndSpiCom_t;
 
 /*
@@ -40,7 +44,6 @@ void Camera_OV264I2cAndSpi_Init(
 	I_I2c_t *configI2c,
 	I_Spi_t *dataSpi,
 	GpioChannel_t spiCsChannel,
-	I_GpioGroup_t *gpioGroup,
 	TimerModule_t *timerModule);
 
 #endif

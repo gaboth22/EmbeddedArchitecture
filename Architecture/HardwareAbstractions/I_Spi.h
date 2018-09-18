@@ -10,6 +10,13 @@ typedef struct
 	uint16_t dataSize;
 } SpiBurstReceiveInfo_t;
 
+enum ChipSelecteState
+{
+    ChipSelectState_Low = 0,
+    ChipSelectState_High = 1
+};
+typedef uint8_t ChipSelectState_t;
+
 typedef struct _SpiApi_t SpiApi_t;
 
 typedef struct
@@ -48,6 +55,19 @@ struct _SpiApi_t
      * @param instance The SPI instance
      */
     I_Event_t * (*GetOnBurstReceiveDoneEvent)(I_Spi_t *instance);
+
+    /*
+     * Get whether the peripheral is busy sending or receiving data
+     * @param instance The SPI instance
+     * @return true if busy, false if not
+     */
+    bool (*IsBusy)(I_Spi_t *instance);
+
+    /*
+     * Set the chip select state for the peripheral - Assumes single slave
+     * @param state The new chip select state
+     */
+    void (*SetChipSelectState)(I_Spi_t *instance, ChipSelectState_t state);
 };
 
 #define Spi_SendByte(_instance, _byteToWrite) \
@@ -61,5 +81,11 @@ struct _SpiApi_t
 
 #define Spi_GetOnBurstReceiveDoneEvent(_instance) \
         (_instance)->api->GetOnBurstReceiveDoneEvent(_instance) \
+
+#define Spi_IsBusy(_instance) \
+        (_instance)->api->IsBusy(_instance) \
+
+#define Spi_SetChipSelectState(_instance, _state) \
+        (_instance)->api->SetChipSelectState(_instance, _state) \
 
 #endif

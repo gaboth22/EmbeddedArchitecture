@@ -35,4 +35,13 @@ struct _CameraApi_t
 	I_Event_t * (*GetOnImageCaptureDoneEvent)(I_Camera_t *instance);
 };
 
+#define Camera_SetConfiguration(_instance, _configuration) \
+        (_instance)->api->SetConfiguration(_instance, __configuration) \
+
+#define Camera_StartImageCapture(_instance) \
+        (_instance)->api->StartImageCapture(_instance) \
+
+#define Camera_GetOnImageCaptureDoneEvent(_instance) \
+        (_instance)->api->GetOnImageCaptureDoneEvent(_instance) \
+
 #endif

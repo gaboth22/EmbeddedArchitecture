@@ -21,8 +21,8 @@ void TimerPeriodic_Start(TimerPeriodic_t *timer)
 	if(!timer->running)
 	{
 		timer->startTicks = timer->timerModule->currentTicks;
+		timer->running = true;
     	Event_Subscribe(TimerModule_GetPeriodEvent(timer->timerModule), &timer->timerModuleSubscriber.interface);
-    	timer->running = true;
 	}
 }
 
