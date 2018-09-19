@@ -18,7 +18,7 @@ typedef struct
  * Initializes pid controller
  */
 void PidController_Init(
-    PidController_t instance
+    PidController_t *instance,
     float kp,
     float ki,
     float kd,

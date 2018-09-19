@@ -2,6 +2,10 @@
 #include "PidController.h"
 #include "utils.h"
 
+static long error;
+static long integral;
+static long derivative;
+
 int PidController_Run(PidController_t *instance, int goal)
 {
     int pidOutput = 0;
