@@ -1,40 +1,46 @@
 #include "msp.h"
 #include "PidController.h"
 #include "utils.h"
+#include "types.h"
 
-static long error;
-static long integral;
-static long derivative;
-
-int PidController_Run(PidController_t *instance, int goal)
+uint64_t PidController_Run(PidController_t *instance, uint64_t currentReading, uint64_t goal)
 {
-    int pidOutput = 0;
+    uint64_t pidOutput = 0;
+    uint64_t error = goal - currentReading;
+    uint64_t derivative = error - instance->lastError;
+    instance->integral = instance->integral + error;
 
-    pidOutput = (instance->kp * error) + (instance->ki * integral) + (instance->kd * derivative);
+    pidOutput = (instance->kp * error) + (instance->ki * instance->integral) + (instance->kd * derivative);
 
     if(pidOutput < 0)
     {
-//      forward = false;
       pidOutput -= instance->basePidOutput;
     }
 
     if(pidOutput > 0)
     {
-//      forward = true;
       pidOutput += instance->basePidOutput;
     }
 
     if(pidOutput > instance->pidOutputCap)
     {
-      pidOutput = 100;
+      pidOutput = instance->pidOutputCap;
     }
 
-    if(pidOutput < -1*(instance->pidOutputCap))
+    if(pidOutput < -(instance->pidOutputCap))
     {
-      pidOutput = -100;
+      pidOutput = -(instance->pidOutputCap);
     }
+
+    instance->lastError = instance->error;
 
     return pidOutput;
+}
+
+void PidController_ClearState(PidController_t *instance)
+{
+    instance->lastError = 0;
+    instance->integral = 0;
 }
 
 void PidController_Init(
@@ -50,4 +56,6 @@ void PidController_Init(
     instance->kd = kd;
     instance->basePidOutput = basePidOutput;
     instance->pidOutputCap = pidOutputCap;
+    instance->lastError = 0;
+    instance->integral = 0;
 }
