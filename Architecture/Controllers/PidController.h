@@ -22,9 +22,9 @@ typedef struct
  * or a fast-running loop
  */
 uint64_t PidController_Run(
-        PidController_t *instance,
-        uint64_t currentReading,
-        uint64_t goal);
+    PidController_t *instance,
+    uint64_t currentReading,
+    uint64_t goal);
 
 /*
  * Clear the state of the PID to start a new loop run
@@ -39,7 +39,7 @@ void PidController_Init(
     float kp,
     float ki,
     float kd,
-    uint8_t basePidOutput,
-    uint8_t pidOutputCap);
+    uint64_t basePidOutput,
+    uint64_t pidOutputCap);
 
 #endif
