@@ -414,20 +414,20 @@ void Camera_OV264I2cAndSpi_Init(
 		TimerModule_t *timerModule)
 {
     instance->busy = true;
-	instance->interface.api = &api;
-	instance->configI2c = configI2c;
-	instance->dataSpi = dataSpi;
-	instance->spiCsChannel = spiCsChannel;
-	instance->timerModule = timerModule;
-	instance->registerDataIndex = 0;
-	instance->cameraConfigState = CameraConfigState_Uninitialized;
+    instance->interface.api = &api;
+    instance->configI2c = configI2c;
+    instance->dataSpi = dataSpi;
+    instance->spiCsChannel = spiCsChannel;
+    instance->timerModule = timerModule;
+    instance->registerDataIndex = 0;
+    instance->cameraConfigState = CameraConfigState_Uninitialized;
 
-	EventSubscriber_Synchronous_Init(
-		&instance->spiBurstReceiveDoneSubscriber,
-		PublishImageData,
-		instance);
+    EventSubscriber_Synchronous_Init(
+        &instance->spiBurstReceiveDoneSubscriber,
+        PublishImageData,
+        instance);
 
-	Event_Synchronous_Init(&instance->onImageCaptureDoneEvent);
+    Event_Synchronous_Init(&instance->onImageCaptureDoneEvent);
 
     ResetCameraCpld(instance);
 }
