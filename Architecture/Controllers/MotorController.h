@@ -6,13 +6,14 @@
 #include "I_Pwm.h"
 #include "PidController.h"
 
-enum
+enum MotorControllerDirection
 {
-    Forward,
-    Backwards,
-    Left,
-    Right
+    MotorControllerDirection_Forward,
+    MotorControllerDirection_Backwards,
+    MotorControllerDirection_Left,
+    MotorControllerDirection_Right
 };
+typedef uint8_t MotorControllerDirection_t;
 
 typedef struct
 {
@@ -20,15 +21,19 @@ typedef struct
     EventSubscriber_Synchronous_t rightEncoderTickSubscriber;
     uint64_t leftEncoderTick;
     uint64_t rightEncoderTick;
-    I_Pwm_t leftPwm;
-    I_Pwm_t rightPwm;
-    PidController_t leftPid;
-    PidController_t rightPid;
+    I_Pwm_t *leftPwm;
+    I_Pwm_t *rightPwm;
+    PidController_t *leftPid;
+    PidController_t *rightPid;
     bool leftMotorForward;
     bool rightMotorForward;
 } MotorController_t;
 
-void MotorController_Run(MotorController_t *instance, uint8_t goal);
+/*
+ * Get instance of MotorController and
+ * goal (forward, backwards, left, right)
+ */
+void MotorController_Run(MotorController_t *instance, MotorControllerDirection_t motorDirection, uint8_t distanceToMove);
 
 /*
  * Init Motorcontroller
@@ -37,9 +42,9 @@ void MotorController_Init(
     MotorController_t *instance,
     I_Event_t *leftEncoderEvent,
     I_Event_t *rightEncoderEvent,
-    I_Pwm_t leftPwm,
-    I_Pwm_t rightPwm,
-    PidController_t leftPid,
-    PidController_t rightPid);
+    I_Pwm_t *leftPwm,
+    I_Pwm_t *rightPwm,
+    PidController_t *leftPid,
+    PidController_t *rightPid);
 
 #endif
