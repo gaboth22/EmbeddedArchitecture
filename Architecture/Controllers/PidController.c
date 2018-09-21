@@ -1,40 +1,29 @@
-#include "msp.h"
 #include "PidController.h"
 #include "utils.h"
 #include "types.h"
 
 uint64_t PidController_Run(PidController_t *instance, uint64_t currentReading, uint64_t goal)
 {
-    uint64_t pidOutput = 0;
+    instance->pidOutput = 0;
     uint64_t error = goal - currentReading;
     uint64_t derivative = error - instance->lastError;
     instance->integral = instance->integral + error;
 
-    pidOutput = (instance->kp * error) + (instance->ki * instance->integral) + (instance->kd * derivative);
+    instance->pidOutput = (instance->kp * error) + (instance->ki * instance->integral) + (instance->kd * derivative);
 
-    if(pidOutput < 0)
+    if(instance->pidOutput > 0)
     {
-      pidOutput -= instance->basePidOutput;
+        instance->pidOutput += instance->basePidOutput;
     }
 
-    if(pidOutput > 0)
+    if(instance->pidOutput > instance->pidOutputCap)
     {
-      pidOutput += instance->basePidOutput;
+        instance->pidOutput = instance->pidOutputCap;
     }
 
-    if(pidOutput > instance->pidOutputCap)
-    {
-      pidOutput = instance->pidOutputCap;
-    }
+    instance->lastError = error;
 
-    if(pidOutput < -(instance->pidOutputCap))
-    {
-      pidOutput = -(instance->pidOutputCap);
-    }
-
-    instance->lastError = instance->error;
-
-    return pidOutput;
+    return instance->pidOutput;
 }
 
 void PidController_ClearState(PidController_t *instance)
@@ -43,13 +32,18 @@ void PidController_ClearState(PidController_t *instance)
     instance->integral = 0;
 }
 
+bool PidController_GoalAchieved(PidController_t *instance)
+{
+    return (instance->pidOutput == 0);
+}
+
 void PidController_Init(
     PidController_t *instance,
     float kp,
     float ki,
     float kd,
     uint64_t basePidOutput,
-    uint64_t pidOutputCap)
+    int64_t pidOutputCap)
 {
     instance->kp = kp;
     instance->ki = ki;

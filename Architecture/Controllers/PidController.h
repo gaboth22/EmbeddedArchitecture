@@ -4,12 +4,14 @@
 #include "PidController.h"
 #include "EventSubscriber_Synchronous.h"
 #include "I_Event.h"
+#include "types.h"
 
 typedef struct
 {
     float kp;
     float ki;
     float kd;
+    uint64_t pidOutput;
     uint64_t basePidOutput;
     uint64_t pidOutputCap;
     uint64_t lastError;
@@ -30,6 +32,11 @@ uint64_t PidController_Run(
  * Clear the state of the PID to start a new loop run
  */
 void PidController_ClearState(PidController_t *instance);
+
+/*
+ * Returns true when the goal has been achieved
+ */
+bool PidController_GoalAchieved(PidController_t *instance);
 
 /*
  * Initializes PID controller
