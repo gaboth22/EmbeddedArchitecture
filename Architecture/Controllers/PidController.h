@@ -2,8 +2,6 @@
 #define PIDCONTROLLER_H
 
 #include "PidController.h"
-#include "EventSubscriber_Synchronous.h"
-#include "I_Event.h"
 #include "types.h"
 
 typedef struct
