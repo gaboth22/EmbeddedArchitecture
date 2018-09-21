@@ -5,6 +5,7 @@
 #include "types.h"
 
 typedef struct _UartApi_t UartApi_t;
+typedef uint32_t Baud_t;
 
 typedef struct
 {
@@ -22,6 +23,17 @@ struct _UartApi_t
 	 * Get the event generated when a byte is received via UART
 	 */
 	I_Event_t * (*GetOnByteReceivedEvent)(I_Uart_t *instance);
+
+	/*
+	 * Run method to be placed in a fast running loop
+	 * to break interrupt contexts.
+	 */
+	void (*Run)(I_Uart_t *instance);
+
+	/*
+	 * Update the baud rate to a supported baud
+	 */
+	void (*UpdateBaud)(I_Uart_t *instance, Baud_t baud);
 };
 
 #define Uart_SendByte(_instance, _byte) \
@@ -29,5 +41,11 @@ struct _UartApi_t
 
 #define Uart_GetOnByteReceivedEvent(_instance) \
         (_instance)->api->GetOnByteReceivedEvent(_instance) \
+
+#define Uart_Run(_instance) \
+        (_instance)->api->Run(_instance) \
+
+#define Uart_UpdateBaud(_instance, _baud) \
+        (_instance)->api->UpdateBaud(_instance, _baud) \
 
 #endif

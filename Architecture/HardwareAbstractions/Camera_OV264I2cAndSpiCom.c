@@ -129,6 +129,7 @@ static void WriteCameraConfig(void *context)
 	switch(instance->cameraConfigState)
 	{
 	    case CameraConfigState_InitialConfig:
+	        TimerPeriodic_Command(&instance->configTimer, TimerPeriodicCommand_Stop);
 	        regAddress = InitialConfig[instance->registerDataIndex].reg;
             regData = InitialConfig[instance->registerDataIndex].data;
 
@@ -148,6 +149,7 @@ static void WriteCameraConfig(void *context)
             }
             else
             {
+                instance->registerDataIndex++;
                 I2c_WriteByte(
                     instance->configI2c,
                     CameraSensorWriteAddress,
@@ -155,8 +157,6 @@ static void WriteCameraConfig(void *context)
                     regData,
                     WriteCameraConfig,
                     instance);
-
-                instance->registerDataIndex++;
             }
 	        break;
 
@@ -181,6 +181,7 @@ static void WriteCameraConfig(void *context)
             }
             else
             {
+                instance->registerDataIndex++;
                 I2c_WriteByte(
                     instance->configI2c,
                     CameraSensorWriteAddress,
@@ -188,7 +189,6 @@ static void WriteCameraConfig(void *context)
                     regData,
                     WriteCameraConfig,
                     instance);
-                instance->registerDataIndex++;
             }
 
 	        break;
@@ -214,6 +214,7 @@ static void WriteCameraConfig(void *context)
             }
             else
             {
+                instance->registerDataIndex++;
                 I2c_WriteByte(
                     instance->configI2c,
                     CameraSensorWriteAddress,
@@ -221,7 +222,6 @@ static void WriteCameraConfig(void *context)
                     regData,
                     WriteCameraConfig,
                     instance);
-                instance->registerDataIndex++;
             }
 	        break;
 
@@ -246,6 +246,7 @@ static void WriteCameraConfig(void *context)
             }
             else
             {
+                instance->registerDataIndex++;
                 I2c_WriteByte(
                     instance->configI2c,
                     CameraSensorWriteAddress,
@@ -253,7 +254,6 @@ static void WriteCameraConfig(void *context)
                     regData,
                     WriteCameraConfig,
                     instance);
-                instance->registerDataIndex++;
             }
 	        break;
 
@@ -277,6 +277,7 @@ static void WriteCameraConfig(void *context)
             }
             else
             {
+                instance->registerDataIndex++;
                 I2c_WriteByte(
                     instance->configI2c,
                     CameraSensorWriteAddress,
@@ -284,7 +285,6 @@ static void WriteCameraConfig(void *context)
                     regData,
                     WriteCameraConfig,
                     instance);
-                instance->registerDataIndex++;
             }
             break;
 
@@ -293,7 +293,8 @@ static void WriteCameraConfig(void *context)
 	        instance->registerDataIndex = 0;
 	        instance->cameraConfigState = CameraConfigState_Uninitialized;
 
-            //WriteToCameraSpiRegister(instance, CamFifoAddress, CamFifoClearMask);
+            WriteToCameraSpiRegister(instance, CamFifoAddress, CamFifoClearMask);
+            WriteToCameraSpiRegister(instance, 0x01, 0x00);
             while(Spi_IsBusy(instance->dataSpi));
             instance->busy = false;
 	        break;
@@ -319,8 +320,8 @@ static void ResetCameraCpldRegister(void *context)
     switch(instance->cameraConfigState)
     {
         case CameraConfigState_ResetCpld1:
-            WriteToCameraSpiRegister(instance, 0x07, 0x80);
             instance->cameraConfigState = CameraConfigState_ResetCpld2;
+            WriteToCameraSpiRegister(instance, 0x07, 0x80);
             break;
         case CameraConfigState_ResetCpld2:
             instance->cameraConfigState = CameraConfigState_CheckSpiBus;
@@ -381,8 +382,8 @@ static void StartImageCapture(I_Camera_t *_instance)
 	}
 	else
 	{
-//	    WriteToCameraSpiRegister(instance, CamFifoAddress, CamFifoClearMask);
-//	    WriteToCameraSpiRegister(instance, CamFifoAddress, CamFifoClearMask);
+	    WriteToCameraSpiRegister(instance, CamFifoAddress, CamFifoClearMask);
+	    WriteToCameraSpiRegister(instance, CamFifoAddress, 0x10);
 	    WriteToCameraSpiRegister(instance, CamFifoAddress, CamFifoStartMask);
 
         TimerPeriodic_Init(
@@ -412,21 +413,21 @@ void Camera_OV264I2cAndSpi_Init(
 		GpioChannel_t spiCsChannel,
 		TimerModule_t *timerModule)
 {
-	instance->interface.api = &api;
-	instance->configI2c = configI2c;
-	instance->dataSpi = dataSpi;
-	instance->spiCsChannel = spiCsChannel;
-	instance->timerModule = timerModule;
-	instance->registerDataIndex = 0;
-	instance->cameraConfigState = CameraConfigState_Uninitialized;
-	instance->busy = true;
+    instance->busy = true;
+    instance->interface.api = &api;
+    instance->configI2c = configI2c;
+    instance->dataSpi = dataSpi;
+    instance->spiCsChannel = spiCsChannel;
+    instance->timerModule = timerModule;
+    instance->registerDataIndex = 0;
+    instance->cameraConfigState = CameraConfigState_Uninitialized;
 
-	EventSubscriber_Synchronous_Init(
-		&instance->spiBurstReceiveDoneSubscriber,
-		PublishImageData,
-		instance);
+    EventSubscriber_Synchronous_Init(
+        &instance->spiBurstReceiveDoneSubscriber,
+        PublishImageData,
+        instance);
 
-	Event_Synchronous_Init(&instance->onImageCaptureDoneEvent);
+    Event_Synchronous_Init(&instance->onImageCaptureDoneEvent);
 
     ResetCameraCpld(instance);
 }
