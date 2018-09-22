@@ -70,7 +70,7 @@ static void MotorController_Foward(MotorController_t *instance, uint8_t distance
 
         if(switchDir)
         {
-//            LeftMotorPidOutputMotorDirectionCheck(instance);
+            LeftMotorPidOutputMotorDirectionCheck(instance);
         }
 
         Pwm_SetDutyCycle(instance->leftPwm, (uint8_t)leftMotorPidOutput);
@@ -91,7 +91,7 @@ static void MotorController_Foward(MotorController_t *instance, uint8_t distance
 
         if(switchDir)
         {
-//            RightMotorPidOutputMotorDirectionCheck(instance);
+            RightMotorPidOutputMotorDirectionCheck(instance);
         }
 
         Pwm_SetDutyCycle(instance->rightPwm, (uint8_t)rightMotorPidOutput);
@@ -113,19 +113,61 @@ static void MotorController_Foward(MotorController_t *instance, uint8_t distance
 /*
  * To move right: Port map right motor to go backwards so 2.7 and 2.5 need to switch
  */
-static void MotorController_Right(MotorController_t *instance)
+static void MotorController_Right(MotorController_t *instance, uint8_t distanceToMove)
 {
+
     if(instance->leftMotorForward)
     {
-        uint64_t leftMotorPidReading = PidController_Run(instance->leftPid, instance->leftEncoderTick, 74);
-        Pwm_SetDutyCycle(instance->leftPwm, (uint8_t)leftMotorPidReading);
+        bool switchDir = false;
+        int64_t leftMotorPidOutput = PidController_Run(instance->leftPid, instance->leftEncoderTick, distanceToMove);
+
+        if((instance->leftMotorPidOutput > 0 && leftMotorPidOutput < 0) || (instance->leftMotorPidOutput < 0 && leftMotorPidOutput > 0))
+        {
+            switchDir = true;
+        }
+
+        instance->leftMotorPidOutput = leftMotorPidOutput;
+
+        if(switchDir)
+        {
+            LeftMotorPidOutputMotorDirectionCheck(instance);
+        }
+
+        Pwm_SetDutyCycle(instance->leftPwm, (uint8_t)leftMotorPidOutput);
     }
 
     if(instance->rightMotorForward)
     {
-        uint64_t rightMotorPidReading = PidController_Run(instance->rightPid, instance->rightEncoderTick, 74);
-        Pwm_SetDutyCycle(instance->rightPwm, (uint8_t)rightMotorPidReading);
+        bool switchDir = false;
+
+        int64_t rightMotorPidOutput = PidController_Run(instance->rightPid, instance->rightEncoderTick, distanceToMove);
+
+        if((instance->rightMotorPidOutput > 0 && rightMotorPidOutput < 0) || (instance->rightMotorPidOutput < 0 && rightMotorPidOutput > 0))
+        {
+            switchDir = true;
+        }
+
+        instance->rightMotorPidOutput = rightMotorPidOutput;
+
+        if(switchDir)
+        {
+            RightMotorPidOutputMotorDirectionCheck(instance);
+        }
+
+        Pwm_SetDutyCycle(instance->rightPwm, (uint8_t)rightMotorPidOutput);
     }
+
+//    if(instance->leftMotorForward)
+//    {
+//        int64_t leftMotorPidReading = PidController_Run(instance->leftPid, instance->leftEncoderTick, 30);
+//        Pwm_SetDutyCycle(instance->leftPwm, (uint8_t)leftMotorPidReading);
+//    }
+
+//    if(instance->rightMotorForward)
+//    {
+//        uint64_t rightMotorPidReading = PidController_Run(instance->rightPid, instance->rightEncoderTick, 30);
+//        Pwm_SetDutyCycle(instance->rightPwm, (uint8_t)rightMotorPidReading);
+//    }
 
     if(PidController_GoalAchieved(instance->leftPid))
     {
@@ -150,7 +192,7 @@ void MotorController_Run(MotorController_t *instance, MotorControllerDirection_t
         case MotorControllerDirection_Right:
             if(instance->rightMotorSwapped)
             {
-                MotorController_Right(instance);
+                MotorController_Right(instance, distanceToMove);
             }
             else{
                 Pwm_ChangePortMap(instance->rightPwm, GpioPwm2_P2B5);
