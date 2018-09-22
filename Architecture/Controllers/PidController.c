@@ -2,11 +2,12 @@
 #include "utils.h"
 #include "types.h"
 
-uint64_t PidController_Run(PidController_t *instance, uint64_t currentReading, uint64_t goal)
+int64_t PidController_Run(PidController_t *instance, uint64_t currentReading, uint64_t goal)
 {
     instance->pidOutput = 0;
-    uint64_t error = goal - currentReading;
-    uint64_t derivative = error - instance->lastError;
+
+    int64_t error = goal - currentReading;
+    int64_t derivative = error - instance->lastError;
     instance->integral = instance->integral + error;
 
     instance->pidOutput = (instance->kp * error) + (instance->ki * instance->integral) + (instance->kd * derivative);
@@ -16,9 +17,19 @@ uint64_t PidController_Run(PidController_t *instance, uint64_t currentReading, u
         instance->pidOutput += instance->basePidOutput;
     }
 
+    if(instance->pidOutput < 0)
+    {
+        instance->pidOutput -= instance->basePidOutput;
+    }
+
     if(instance->pidOutput > instance->pidOutputCap)
     {
         instance->pidOutput = instance->pidOutputCap;
+    }
+
+    if(instance->pidOutput < -instance->pidOutputCap)
+    {
+        instance->pidOutput = -instance->pidOutputCap;
     }
 
     instance->lastError = error;
@@ -43,7 +54,7 @@ void PidController_Init(
     float ki,
     float kd,
     uint64_t basePidOutput,
-    uint64_t pidOutputCap)
+    int64_t pidOutputCap)
 {
     instance->kp = kp;
     instance->ki = ki;
