@@ -13,7 +13,6 @@ enum MotorControllerDirection
     MotorControllerDirection_Backwards,
     MotorControllerDirection_Left,
     MotorControllerDirection_Right,
-    MotorControllerDirection_Right_Run
 };
 typedef uint8_t MotorControllerDirection_t;
 
@@ -30,8 +29,12 @@ typedef struct
     PidController_t *leftPid;
     PidController_t *rightPid;
     bool leftMotorForward;
+    bool leftMotorBackwards;
+    bool leftMotorSwapped;
     bool rightMotorForward;
+    bool rightMotorBackwards;
     bool rightMotorSwapped;
+
 } MotorController_t;
 
 /*
