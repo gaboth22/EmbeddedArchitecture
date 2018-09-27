@@ -25,8 +25,8 @@ typedef struct
  */
 int64_t PidController_Run(
     PidController_t *instance,
-    uint64_t currentReading,
-    uint64_t goal);
+    int64_t currentReading,
+    int64_t goal);
 
 /*
  * Clear the state of the PID to start a new loop run
