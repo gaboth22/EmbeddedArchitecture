@@ -44,7 +44,7 @@ void PidController_Init(
     float kp,
     float ki,
     float kd,
-    uint64_t basePidOutput,
+    int64_t basePidOutput,
     int64_t pidOutputCap);
 
 #endif

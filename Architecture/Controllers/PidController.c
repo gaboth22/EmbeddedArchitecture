@@ -53,8 +53,8 @@ void PidController_Init(
     float kp,
     float ki,
     float kd,
-    uint64_t basePidOutput,
-    uint64_t pidOutputCap)
+    int64_t basePidOutput,
+    int64_t pidOutputCap)
 {
     instance->kp = kp;
     instance->ki = ki;
