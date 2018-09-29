@@ -20,11 +20,6 @@ typedef struct
 struct _CameraApi_t
 {
 	/*
-	 * Method to set configuration of camera
-	 */
-	void (*SetConfiguration)(I_Camera_t *instance, const void *configuration);
-
-	/*
 	 * Start an image capture
 	 */
 	void (*StartImageCapture)(I_Camera_t *instance);
@@ -34,9 +29,6 @@ struct _CameraApi_t
 	 */
 	I_Event_t * (*GetOnImageCaptureDoneEvent)(I_Camera_t *instance);
 };
-
-#define Camera_SetConfiguration(_instance, _configuration) \
-        (_instance)->api->SetConfiguration(_instance, __configuration) \
 
 #define Camera_StartImageCapture(_instance) \
         (_instance)->api->StartImageCapture(_instance) \

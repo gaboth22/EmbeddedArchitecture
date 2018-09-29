@@ -25,15 +25,19 @@ struct _UartApi_t
 	I_Event_t * (*GetOnByteReceivedEvent)(I_Uart_t *instance);
 
 	/*
-	 * Run method to be placed in a fast running loop
-	 * to break interrupt contexts.
-	 */
-	void (*Run)(I_Uart_t *instance);
-
-	/*
 	 * Update the baud rate to a supported baud
 	 */
 	void (*UpdateBaud)(I_Uart_t *instance, Baud_t baud);
+
+	/*
+	 * Disable RX
+	 */
+	void (*DisableRx)(I_Uart_t *instance);
+
+	/*
+	 * Enable RX
+	 */
+	void (*EnableRx)(I_Uart_t *instance);
 };
 
 #define Uart_SendByte(_instance, _byte) \
@@ -42,10 +46,13 @@ struct _UartApi_t
 #define Uart_GetOnByteReceivedEvent(_instance) \
         (_instance)->api->GetOnByteReceivedEvent(_instance) \
 
-#define Uart_Run(_instance) \
-        (_instance)->api->Run(_instance) \
-
 #define Uart_UpdateBaud(_instance, _baud) \
         (_instance)->api->UpdateBaud(_instance, _baud) \
+
+#define Uart_DisableRx(_instance) \
+        (_instance)->api->DisableRx(_instance) \
+
+#define Uart_EnableRx(_instance) \
+        (_instance)->api->EnableRx(_instance) \
 
 #endif
