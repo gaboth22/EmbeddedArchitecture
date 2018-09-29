@@ -1,4 +1,5 @@
 #include <string.h>
+#include "I_Event.h"
 #include "Camera_SpinelVC0706.h"
 #include "Uassert.h"
 #include "utils.h"
@@ -28,7 +29,8 @@ enum
     CameraState_GetImageLengthRequestIssued,
     CameraState_ReadImageDataRequestIssued,
     CameraState_IssueImageDataTransferStartRequest,
-    CameraState_ImageDataTransferRequestIssued
+    CameraState_ImageDataTransferRequestIssued,
+    CameraState_ImageCycleDone
 };
 
 static const uint8_t SetResolutionTo160x120CommandBytes[] =
@@ -63,8 +65,9 @@ static void StartImageCapture(I_Camera_t *instance)
     {
         cam->busy = true;
         cam->bufferIndex = 0;
+        Event_Subscribe(Uart_GetOnByteReceivedEvent(cam->uart), &cam->uartSub.interface);
         Uart_EnableRx(cam->uart);
-        cam->state = CameraState_IssueStopCaptureRequest;
+        cam->state = CameraState_IssueGetImageRequest;
     }
 }
 
@@ -147,7 +150,6 @@ void Camera_SpinelVC076_Init(
     instance->state = CameraState_Uninitialized;
 
     EventSubscriber_Synchronous_Init(&instance->uartSub, ReceiveByte, instance);
-    Event_Subscribe(Uart_GetOnByteReceivedEvent(uart), &instance->uartSub.interface);
 
     EventSubscriber_Synchronous_Init(&instance->dmaSub, DmaRxDoneCallback, instance);
     Event_Subscribe(
@@ -166,30 +168,9 @@ void Camera_SpinelVC076_Run(Camera_SpinelVC0706_t *instance)
 
     switch(instance->state)
     {
-        case CameraState_IssueStopCaptureRequest:
-        {
-            for(i = 0; i < GeneralCommandSize; i++)
-            {
-                Uart_SendByte(instance->uart, StopImageCaptureCommand[i]);
-            }
-
-            instance->state = CameraState_StopCaptureRequestIssued;
-            break;
-        }
-
-        case CameraState_StopCaptureRequestIssued:
-        {
-            if(GeneralAckSize == instance->bufferIndex)
-            {
-                Uassert(0 == memcmp(&StopImageCaptureAckBytes[0], &instance->receiveBuffer[0], GeneralAckSize));
-                instance->bufferIndex = 0;
-                instance->state = CameraState_IssueGetImageRequest;
-            }
-            break;
-        }
-
         case CameraState_IssueGetImageRequest:
         {
+            instance->bufferIndex = 0;
             for(i = 0; i < GeneralCommandSize; i++)
             {
                 Uart_SendByte(instance->uart, GetImageCommandBytes[i]);
@@ -212,6 +193,7 @@ void Camera_SpinelVC076_Run(Camera_SpinelVC0706_t *instance)
 
         case CameraState_IssueGetImageLengthRequest:
         {
+            instance->bufferIndex = 0;
             for(i = 0; i < GeneralCommandSize; i++)
             {
                 Uart_SendByte(instance->uart, GetImageLengthCommandBytes[i]);
@@ -241,6 +223,7 @@ void Camera_SpinelVC076_Run(Camera_SpinelVC0706_t *instance)
                 }
                 else
                 {
+                    Event_Unsubscribe(Uart_GetOnByteReceivedEvent(instance->uart), &instance->uartSub.interface);
                     Uart_DisableRx(instance->uart);
                     instance->state = CameraState_IssueImageDataTransferStartRequest;
                 }
@@ -276,19 +259,51 @@ void Camera_SpinelVC076_Run(Camera_SpinelVC0706_t *instance)
         }
 
         case CameraState_ImageDataTransferRequestIssued:
+            if(instance->dmaRxDone)
+            {
+                instance->dmaRxDone = false;
+                instance->bufferIndex = 0;
+                Event_Subscribe(Uart_GetOnByteReceivedEvent(instance->uart), &instance->uartSub.interface);
+                Uart_EnableRx(instance->uart);
+                instance->state = CameraState_IssueStopCaptureRequest;
+            }
             break;
+
+        case CameraState_IssueStopCaptureRequest:
+        {
+            for(i = 0; i < GeneralCommandSize; i++)
+            {
+                Uart_SendByte(instance->uart, StopImageCaptureCommand[i]);
+            }
+
+            instance->state = CameraState_StopCaptureRequestIssued;
+            break;
+        }
+
+        case CameraState_StopCaptureRequestIssued:
+        {
+            if(GeneralAckSize == instance->bufferIndex)
+            {
+                Event_Unsubscribe(Uart_GetOnByteReceivedEvent(instance->uart), &instance->uartSub.interface);
+                Uart_DisableRx(instance->uart);
+                Uassert(0 == memcmp(&StopImageCaptureAckBytes[0], &instance->receiveBuffer[0], GeneralAckSize));
+                instance->state = CameraState_ImageCycleDone;
+            }
+            break;
+        }
 
         default:
             break;
     }
 
-    if(instance->dmaRxDone)
+    if(CameraState_ImageCycleDone == instance->state)
     {
-        instance->dmaRxDone = false;
+        instance->state = CameraState_Uninitialized;
         instance->image.image = instance->imageBuffer;
         instance->image.imageSize = GetConcatenatedImageLength(
             instance->currentImageLengthHighByte,
             instance->currentImageLengthLowByte) + ExtraBytesForCameraAck;
+        instance->busy = false;
         Event_Publish(&instance->onImageCaptureDone.interface, &instance->image);
     }
 }

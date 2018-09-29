@@ -1,8 +1,6 @@
 #include "ImageForwardingController.h"
 #include "utils.h"
 
-#include "msp.h"
-
 enum
 {
     ImageMessageCommand = 0xA1
@@ -16,7 +14,7 @@ static void FlagTrxDone(void *context, void *args)
     instance->dmaTxDone = true;
 }
 
-I_Event_t * GetOnImageForwardedEvent(ImageForwardingController_t *instance)
+I_Event_t * ImageForwardingController_GetOnImageForwardedEvent(ImageForwardingController_t *instance)
 {
     return &instance->onImgFwdDoneEvent.interface;
 }
@@ -35,17 +33,12 @@ static void ForwardImageToUart(void *context, void *args)
     RECAST(instance, context, ImageForwardingController_t *);
     RECAST(image, args, CameraImage_t *);
 
-    //Uart_EnableRx(instance->wifiChipUart);
-
     Uart_SendByte(instance->wifiChipUart, ImageMessageCommand);
     uint16_t imgSizeHighByte = ((image->imageSize >> 8) & 0x00FF);
     uint16_t imgSizeLowByte = (image->imageSize & 0x00FF);
     Uart_SendByte(instance->wifiChipUart, imgSizeHighByte);
     Uart_SendByte(instance->wifiChipUart, imgSizeLowByte);
 
-
-    //Uart_DisableRx(instance->wifiChipUart);
-    UCA3IFG |= EUSCI_A_IFG_TXIFG;
     instance->dmaTxDone = false;
 
     DmaController_SetChannelSourceTrigger(

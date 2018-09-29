@@ -41,7 +41,7 @@ void ImageForwardingController_Init(
 /*
  * Get the event that fires when an image is forwarded
  */
-I_Event_t * GetOnImageForwardedEvent(ImageForwardingController_t *instance);
+I_Event_t * ImageForwardingController_GetOnImageForwardedEvent(ImageForwardingController_t *instance);
 
 /*
  * Run method, to be placed in a fast running loop
