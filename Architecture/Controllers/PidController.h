@@ -9,11 +9,11 @@ typedef struct
     float kp;
     float ki;
     float kd;
-    uint64_t pidOutput;
+    int64_t pidOutput;
     uint64_t basePidOutput;
-    uint64_t pidOutputCap;
-    uint64_t lastError;
-    uint64_t integral;
+    int64_t pidOutputCap;
+    int64_t lastError;
+    int64_t integral;
 } PidController_t;
 
 /*
@@ -21,10 +21,10 @@ typedef struct
  * must be placed in the main loop,
  * or a fast-running loop
  */
-uint64_t PidController_Run(
+int64_t PidController_Run(
     PidController_t *instance,
-    uint64_t currentReading,
-    uint64_t goal);
+    int64_t currentReading,
+    int64_t goal);
 
 /*
  * Clear the state of the PID to start a new loop run
@@ -45,6 +45,6 @@ void PidController_Init(
     float ki,
     float kd,
     uint64_t basePidOutput,
-    uint64_t pidOutputCap);
+    int64_t pidOutputCap);
 
 #endif
