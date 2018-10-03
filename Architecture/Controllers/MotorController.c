@@ -63,6 +63,11 @@ static void MotorController_RunPidForward(MotorController_t *instance)
         Pwm_SetDutyCycle(instance->pwmRightFwd, (uint8_t)rightMotorPidOutput);
         instance->rightMotorDirection = MotorDirection_Forward;
     }
+
+    if(leftMotorPidOutput == 0 && rightMotorPidOutput == 0)
+    {
+        instance->busy = false;
+    }
 }
 
 static void MotorController_RunPidRight(MotorController_t *instance)
@@ -96,6 +101,11 @@ static void MotorController_RunPidRight(MotorController_t *instance)
         Pwm_SetDutyCycle(instance->pwmRightBwd, (uint8_t)rightMotorPidOutput);
         instance->rightMotorDirection = MotorDirection_Forward; //moving forward to respect to other PWM
     }
+
+    if(leftMotorPidOutput == 0 && rightMotorPidOutput == 0)
+    {
+        instance->busy = false;
+    }
 }
 
 static void MotorController_RunPidLeft(MotorController_t *instance)
@@ -108,7 +118,8 @@ static void MotorController_RunPidLeft(MotorController_t *instance)
         Pwm_SetDutyCycle(instance->pwmLeftFwd, (uint8_t) (-1 * leftMotorPidOutput));
         instance->leftMotorDirection = MotorDirection_Backwards; //move backwards with respect to PWM
     }
-    else{
+    else
+    {
         Pwm_SetDutyCycle(instance->pwmLeftFwd, 0);
         Pwm_SetDutyCycle(instance->pwmLeftBwd, (uint8_t)leftMotorPidOutput);
         instance->leftMotorDirection = MotorDirection_Forward;
@@ -128,9 +139,14 @@ static void MotorController_RunPidLeft(MotorController_t *instance)
         Pwm_SetDutyCycle(instance->pwmRightFwd, (uint8_t)rightMotorPidOutput);
         instance->rightMotorDirection = MotorDirection_Forward;
     }
+
+    if(leftMotorPidOutput == 0 && rightMotorPidOutput == 0)
+    {
+        instance->busy = false;
+    }
 }
 
-static void MotorController_SetupDirection(MotorController_t *instance, uint8_t distanceToMove)
+static void MotorController_SetupDirection(MotorController_t *instance, uint16_t distanceToMove)
 {
     instance->leftEncoderTick = 0;
     instance->rightEncoderTick = 0;
@@ -138,20 +154,23 @@ static void MotorController_SetupDirection(MotorController_t *instance, uint8_t 
     instance->rightMotorDistanceToMove = (distanceToMove - 8); // offset bc right motor tends to spin for more
 }
 
-void MotorController_Forward(MotorController_t *instance, uint8_t distanceToMove)
+void MotorController_Forward(MotorController_t *instance, uint16_t distanceToMove)
 {
+    instance->busy = true;
     MotorController_SetupDirection(instance, distanceToMove);
     instance->controllerDirection = ControllerDirection_Forward;
 }
 
-void MotorController_TurnRight(MotorController_t *instance, uint8_t distanceToMove)
+void MotorController_TurnRight(MotorController_t *instance, uint16_t distanceToMove)
 {
+    instance->busy = true;
     MotorController_SetupDirection(instance, distanceToMove);
     instance->controllerDirection = ControllerDirection_Right;
 }
 
-void MotorController_TurnLeft(MotorController_t *instance, uint8_t distanceToMove)
+void MotorController_TurnLeft(MotorController_t *instance, uint16_t distanceToMove)
 {
+    instance->busy = true;
     MotorController_SetupDirection(instance, distanceToMove);
     instance->controllerDirection = ControllerDirection_Left;
 }
@@ -174,6 +193,11 @@ void MotorController_Run(MotorController_t *instance)
     }
 }
 
+bool MotorController_Busy(MotorController_t *instance)
+{
+    return instance->busy;
+}
+
 void MotorController_Init(
     MotorController_t *instance,
     I_Event_t *leftEncoderEvent,
@@ -185,6 +209,8 @@ void MotorController_Init(
     PidController_t *leftPid,
     PidController_t *rightPid)
 {
+    instance->busy = false;
+
     instance->leftMotorDirection = MotorDirection_Forward;
     instance->rightMotorDirection = MotorDirection_Forward;
 

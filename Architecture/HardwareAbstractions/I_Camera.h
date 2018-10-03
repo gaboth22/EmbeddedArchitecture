@@ -28,6 +28,11 @@ struct _CameraApi_t
 	 * Get event that publishes when image capture finishes
 	 */
 	I_Event_t * (*GetOnImageCaptureDoneEvent)(I_Camera_t *instance);
+
+	/*
+	 * Clear the state of the camera
+	 */
+	void (*ClearState)(I_Camera_t *instance);
 };
 
 #define Camera_StartImageCapture(_instance) \
@@ -35,5 +40,8 @@ struct _CameraApi_t
 
 #define Camera_GetOnImageCaptureDoneEvent(_instance) \
         (_instance)->api->GetOnImageCaptureDoneEvent(_instance) \
+
+#define Camera_ClearState(_instance) \
+        (_instance)->api->ClearState(_instance) \
 
 #endif

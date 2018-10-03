@@ -124,8 +124,17 @@ static void SetResolution(void *context)
     TimerOneShot_Start(&cam->waitForCameraTimer);
 }
 
+static void ClearState(I_Camera_t *_instance)
+{
+    RECAST(instance, _instance, Camera_SpinelVC0706_t *);
+    instance->bufferIndex = 0;
+    instance->dmaRxDone = false;
+    instance->busy = false;
+    instance->state = CameraState_Uninitialized;
+}
+
 static const CameraApi_t api =
-    { StartImageCapture, GetOnImageCaptureDoneEvent };
+    { StartImageCapture, GetOnImageCaptureDoneEvent, ClearState };
 
 void Camera_SpinelVC076_Init(
     Camera_SpinelVC0706_t *instance,

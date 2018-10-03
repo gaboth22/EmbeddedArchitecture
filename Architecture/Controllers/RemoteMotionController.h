@@ -1,0 +1,42 @@
+#ifndef REMOTEMOTIONCONTROLLER_H
+#define REMOTEMOTIONCONTROLLER_H
+
+#include "MotorController.h"
+#include "EventSubscriber_Synchronous.h"
+#include "MotionCommnad.h"
+#include "I_Uart.h"
+#include "types.h"
+
+typedef struct
+{
+    MotorController_t *motorController;
+    MotionCommand_t currentCommand;
+    I_Uart_t *wifiUart;
+    EventSubscriber_Synchronous_t uartSub;
+    uint8_t ackCount;
+    bool busy;
+    bool newCommand;
+} RemoteMotionController_t;
+
+/*
+ * Let the module run. To be placed in a fast-running loop
+ */
+void RemoteMotionController_Run(RemoteMotionController_t *instance);
+
+/*
+ * Carry out motion
+ * @param instance The object
+ */
+void RemoteMotionController_DoMotion(RemoteMotionController_t *instance);
+
+/*
+ * Initialize the remote motion controller
+ * @param instance The object
+ * @param motorController A motor controller
+ */
+void RemoteMotionController_Init(
+    RemoteMotionController_t *instance,
+    MotorController_t *motorController,
+    I_Uart_t *wifiUart);
+
+#endif
