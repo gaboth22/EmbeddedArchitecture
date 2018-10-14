@@ -40,32 +40,37 @@ typedef struct
     ControllerDirection_t controllerDirection;
     MotorDirection_t leftMotorDirection;
     MotorDirection_t rightMotorDirection;
-    uint8_t leftMotorDistanceToMove;
-    uint8_t rightMotorDistanceToMove;
+    uint16_t leftMotorDistanceToMove;
+    uint16_t rightMotorDistanceToMove;
+    bool busy;
 } MotorController_t;
 
 /*
  * Get instance of MotorController and
  * goal (forward, backwards, left, right)
  */
-//void MotorController_Run(MotorController_t *instance, MotorControllerDirection_t motorDirection, uint8_t distanceToMove);
 void MotorController_Run(MotorController_t *instance);
 
 /*
  * Move Motor controller forward
  */
-void MotorController_Forward(MotorController_t *instance, uint8_t distanceToMove);
+void MotorController_Forward(MotorController_t *instance, uint16_t numberOfTicksToMove);
 
 /*
  * Move Motor controller right, turning rightMotorPid backwards on
  * right motor
  */
-void MotorController_TurnRight(MotorController_t *instance, uint8_t distanceToMove);
+void MotorController_TurnRight(MotorController_t *instance, uint16_t numberOfTicksToMove);
 
 /*
  * Move Motor controller left by turning left motor backwards
  */
-void MotorController_TurnLeft(MotorController_t *instance, uint8_t distanceToMove);
+void MotorController_TurnLeft(MotorController_t *instance, uint16_t numberOfTicksToMove);
+
+/*
+ * Returns true if the controller is moving the motors, false otherwise
+ */
+bool MotorController_Busy(MotorController_t *instance);
 
 /*
  * Init Motor Controller
