@@ -12,12 +12,15 @@ typedef struct
 {
     I_Event_t *onImageCaptureDoneEvent;
     I_Uart_t *wifiChipUart;
+    I_Camera_t *camera;
     I_DmaController_t *dmaController;
     EventSubscriber_Synchronous_t imageCaptureDoneSub;
     EventSubscriber_Synchronous_t dmaTrxDoneSub;
+    EventSubscriber_Synchronous_t uartByteReceivedSub;
     Event_Synchronous_t onImgFwdDoneEvent;
     uint32_t imageTrxDmaChannel;
     void *outputUartTxBufferAddress;
+    bool receivedAck;
     bool dmaTxDone;
 } ImageForwardingController_t;
 
@@ -32,11 +35,21 @@ typedef struct
  */
 void ImageForwardingController_Init(
         ImageForwardingController_t *instance,
-        I_Event_t *onImageCaptureDoneEvent,
+        I_Camera_t *cam,
         I_Uart_t *wifiUart,
         I_DmaController_t *dmaController,
         uint32_t imageTrxDmaChannel,
         void *outputUartTxBufferAddress);
+
+/*
+ * Clear camera and DMA state if comm hangs
+ */
+void ImageForwardingController_ClearState(ImageForwardingController_t *instance);
+
+/*
+ * Forward one image
+ */
+void ImageForwardingController_ForwardOneImage(ImageForwardingController_t *instance);
 
 /*
  * Get the event that fires when an image is forwarded

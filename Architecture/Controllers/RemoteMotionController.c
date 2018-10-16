@@ -5,10 +5,7 @@
 enum
 {
     MotionMessageCommand = 0xA2,
-    Ack_ReturnMotionCommand = 0xA2,
-    ForwardTicksToMove = 5 * 75,
-    LeftTicksToMove = 95,
-    RightTicksToMove = 95
+    MotionMessageAck = 0xA2
 };
 
 static void ReceiveUartByte(void *context, void *args)
@@ -16,7 +13,7 @@ static void ReceiveUartByte(void *context, void *args)
     RECAST(instance, context, RemoteMotionController_t *);
     RECAST(byte, args, uint8_t *);
 
-    if(*byte == Ack_ReturnMotionCommand)
+    if(*byte == MotionMessageAck)
     {
         instance->ackCount++;
     }
@@ -38,10 +35,18 @@ void RemoteMotionController_DoMotion(RemoteMotionController_t *instance)
     }
 }
 
+I_Event_t * RemoteMotionController_GetOnMotionAcknowledgedEvent(RemoteMotionController_t *instance)
+{
+    return &instance->onMotionAcknowledged.interface;
+}
+
 void RemoteMotionController_Init(
     RemoteMotionController_t *instance,
     MotorController_t *motorController,
-    I_Uart_t *wifiUart)
+    I_Uart_t *wifiUart,
+    uint16_t ticksToMoveWhenForward,
+    uint16_t ticksToMoveWhenRight,
+    uint16_t ticksToMoveWhenLeft)
 {
     instance->motorController = motorController;
     instance->currentCommand = MotionCommand_Uninitialized;
@@ -49,6 +54,10 @@ void RemoteMotionController_Init(
     instance->busy = false;
     instance->newCommand = false;
     instance->ackCount = 0;
+    instance->fwdTicks = ticksToMoveWhenForward;
+    instance->rightTicks = ticksToMoveWhenRight;
+    instance->leftTicks = ticksToMoveWhenLeft;
+    Event_Synchronous_Init(&instance->onMotionAcknowledged);
     EventSubscriber_Synchronous_Init(&instance->uartSub, ReceiveUartByte, instance);
 }
 
@@ -64,15 +73,21 @@ void RemoteMotionController_Run(RemoteMotionController_t *instance)
         switch(instance->currentCommand)
         {
             case MotionCommand_Forward:
-                MotorController_Forward(instance->motorController, ForwardTicksToMove);
+                MotorController_Forward(
+                    instance->motorController,
+                    instance->fwdTicks);
                 break;
 
             case MotionCommand_Left:
-                MotorController_TurnLeft(instance->motorController, LeftTicksToMove);
+                MotorController_TurnLeft(
+                    instance->motorController,
+                    instance->leftTicks);
                 break;
 
             case MotionCommand_Right:
-                MotorController_TurnRight(instance->motorController, RightTicksToMove);
+                MotorController_TurnRight(
+                    instance->motorController,
+                    instance->rightTicks);
                 break;
 
             default:
@@ -80,11 +95,13 @@ void RemoteMotionController_Run(RemoteMotionController_t *instance)
         }
 
         instance->currentCommand = MotionCommand_Uninitialized;
+        Event_Publish(&instance->onMotionAcknowledged.interface, NULL);
     }
     else if(instance->ackCount >= 2)
     {
         instance->ackCount = 0;
         Event_Unsubscribe(Uart_GetOnByteReceivedEvent(instance->wifiUart), &instance->uartSub.interface);
         instance->busy = false;
+        Event_Publish(&instance->onMotionAcknowledged.interface, NULL);
     }
 }

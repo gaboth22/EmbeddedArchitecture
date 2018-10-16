@@ -11,108 +11,110 @@ typedef uint8_t Ack_t;
 enum RunningState
 {
     RunningState_Unitialized = 0,
+    RunningState_StartCommCheck,
     RunningState_DoImageCaptureCycle,
     RunningState_DoMotionCommandCycle,
-    RunningState_WaitForAck,
-    PeriodToConsiderCommDeadMs = 1000
+    RunningState_WaitForAck
 };
 typedef uint8_t RunningSate_t;
 
-static void InterpretAck(void *context, void *args)
+enum
 {
-    RECAST(instance, context, CommunicationArbiter_t *);
-    RECAST(ack, args, uint8_t *);
+    PeriodToConsiderCommDeadMs = 5000,
+    PeriodToRestartCaptureMs = 5000
+};
 
-    TimerPeriodic_Command(&instance->checkStateTimer, TimerPeriodicCommand_Pause);
-
-    switch(*ack)
-    {
-        case Ack_ReceiveImageCommand:
-            instance->state = RunningState_DoMotionCommandCycle;
-            break;
-
-        case Ack_ReturnMotionCommand:
-            instance->motionAckCount++;
-            if(instance->motionAckCount >= 2)
-            {
-                instance->motionAckCount = 0;
-                instance->state = RunningState_DoImageCaptureCycle;
-            }
-
-        default:
-            break;
-    }
-}
-
-static void ReEnableUartRxToWaitForAck(void *context, void *args)
+static void MoveOnToImageCaptureCycle(void *context, void *args)
 {
     RECAST(instance, context, CommunicationArbiter_t *);
     IGNORE(args);
 
-    Uart_EnableRx(instance->wifiChipUart);
+    TimerOneShot_Stop(&instance->checkStateTimer);
+    instance->state = RunningState_DoImageCaptureCycle;
 }
 
-static void ResetState(void *context)
+static void MoveOnToMotionCycle(void *context, void *args)
+{
+    RECAST(instance, context, CommunicationArbiter_t *);
+    IGNORE(args);
+
+    TimerOneShot_Stop(&instance->checkStateTimer);
+    instance->state = RunningState_DoMotionCommandCycle;
+}
+
+static void RestartCapture(void *context)
+{
+    RECAST(instance, context, CommunicationArbiter_t *);
+    instance->state = RunningState_DoImageCaptureCycle;
+}
+
+static void ClearCommState(void *context)
 {
     RECAST(instance, context, CommunicationArbiter_t *);
     instance->motionAckCount = 0;
-    instance->state = RunningState_DoImageCaptureCycle;
-    Camera_ClearState(instance->camera);
+    ImageForwardingController_ClearState(instance->imageForwardingController);
+    TimerOneShot_Start(&instance->delayCaptureTimer);
 }
 
 void CommunicationArbiter_Init(
     CommunicationArbiter_t *instance,
-    I_Camera_t *camera,
-    I_Uart_t *wifiChipUart,
-    I_Event_t *onImageForwarded,
     RemoteMotionController_t *remoteMotionController,
+    ImageForwardingController_t *imageForwardingController,
     TimerModule_t *timerModule)
 {
     instance->remoteMotionController = remoteMotionController;
-    instance->wifiChipUart = wifiChipUart;
-    instance->camera = camera;
-    instance->state = RunningState_DoImageCaptureCycle;
+    instance->imageForwardingController = imageForwardingController;
+    instance->state = RunningState_StartCommCheck;
     instance->motionAckCount = 0;
     instance->timerModule = timerModule;
 
-    TimerPeriodic_Init(
+    TimerOneShot_Init(
         &instance->checkStateTimer,
         timerModule,
         PeriodToConsiderCommDeadMs,
-        ResetState,
+        ClearCommState,
         instance);
 
-    EventSubscriber_Synchronous_Init(&instance->imageTrxDoneSub, ReEnableUartRxToWaitForAck, instance);
-    Event_Subscribe(onImageForwarded, &instance->imageTrxDoneSub.interface);
+    TimerOneShot_Init(
+        &instance->delayCaptureTimer,
+        timerModule,
+        PeriodToRestartCaptureMs,
+        RestartCapture,
+        instance);
 
-    EventSubscriber_Synchronous_Init(&instance->uartByteReceivedSub, InterpretAck, instance);
-    Event_Subscribe(Uart_GetOnByteReceivedEvent(instance->wifiChipUart), &instance->uartByteReceivedSub.interface);
+    EventSubscriber_Synchronous_Init(&instance->imageForwardedSub, MoveOnToMotionCycle, instance);
+    Event_Subscribe(
+        ImageForwardingController_GetOnImageForwardedEvent(imageForwardingController),
+        &instance->imageForwardedSub.interface);
+
+    EventSubscriber_Synchronous_Init(&instance->motionAcknowledgedSub, MoveOnToImageCaptureCycle, instance);
+    Event_Subscribe(
+        RemoteMotionController_GetOnMotionAcknowledgedEvent(remoteMotionController),
+        &instance->motionAcknowledgedSub.interface);
 }
 
 void CommunicationArbiter_Run(CommunicationArbiter_t *instance)
 {
     switch(instance->state)
     {
+        case RunningState_StartCommCheck:
+            TimerOneShot_Start(&instance->checkStateTimer);
+            instance->state = RunningState_DoImageCaptureCycle;
+            break;
+
         case RunningState_DoImageCaptureCycle:
-            instance->startCheck = true;
             instance->state = RunningState_Unitialized;
-            Camera_StartImageCapture(instance->camera);
+            TimerOneShot_Start(&instance->checkStateTimer);
+            ImageForwardingController_ForwardOneImage(instance->imageForwardingController);
             break;
 
         case RunningState_DoMotionCommandCycle:
-            instance->startCheck = true;
             instance->state = RunningState_Unitialized;
+            TimerOneShot_Start(&instance->checkStateTimer);
             RemoteMotionController_DoMotion(instance->remoteMotionController);
             break;
 
         default:
             break;
-    }
-
-    if(instance->startCheck)
-    {
-        instance->startCheck = false;
-        TimerPeriodic_Command(&instance->checkStateTimer, TimerPeriodicCommand_Stop);
-        TimerPeriodic_Start(&instance->checkStateTimer);
     }
 }

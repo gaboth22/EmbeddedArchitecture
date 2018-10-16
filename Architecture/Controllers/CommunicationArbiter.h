@@ -6,22 +6,23 @@
 #include "I_Uart.h"
 #include "EventSubscriber_Synchronous.h"
 #include "RemoteMotionController.h"
-#include "TimerPeriodic.h"
+#include "ImageForwardingController.h"
+#include "TimerOneShot.h"
 #include "TimerModule.h"
 
 typedef struct
 {
-    I_Camera_t *camera;
     I_Uart_t *wifiChipUart;
     RemoteMotionController_t *remoteMotionController;
-    EventSubscriber_Synchronous_t imageTrxDoneSub;
-    EventSubscriber_Synchronous_t uartByteReceivedSub;
+    ImageForwardingController_t *imageForwardingController;
+    EventSubscriber_Synchronous_t imageForwardedSub;
+    EventSubscriber_Synchronous_t motionAcknowledgedSub;
     uint8_t state;
     uint8_t ack;
     uint8_t motionAckCount;
-    TimerPeriodic_t checkStateTimer;
+    TimerOneShot_t checkStateTimer;
+    TimerOneShot_t delayCaptureTimer;
     TimerModule_t *timerModule;
-    bool startCheck;
 } CommunicationArbiter_t;
 
 /*
@@ -29,10 +30,8 @@ typedef struct
  */
 void CommunicationArbiter_Init(
     CommunicationArbiter_t *instance,
-    I_Camera_t *camera,
-    I_Uart_t *wifiChipUart,
-    I_Event_t *onImageForwarded,
     RemoteMotionController_t *remoteMotionController,
+    ImageForwardingController_t *imageForwardingController,
     TimerModule_t *timerModule);
 
 /*

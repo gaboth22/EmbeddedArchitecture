@@ -8,7 +8,6 @@ enum
 {
     WaitForCameraInitMs = 3000,
     SmallImageThreshold = 2048,
-    ResetCameraCommandBytesSize = 4,
     GeneralCommandSize = 5,
     GeneralAckSize = 5,
     GetImageLengthAckSize = 9,
@@ -116,12 +115,36 @@ static void SetResolution(void *context)
     }
 
     TimerOneShot_Init(
-            &cam->waitForCameraTimer,
-            cam->timerModule,
-            200,
-            MarkCamAsNotBusy,
-            cam);
+        &cam->waitForCameraTimer,
+        cam->timerModule,
+        200,
+        MarkCamAsNotBusy,
+        cam);
     TimerOneShot_Start(&cam->waitForCameraTimer);
+}
+
+static void RestartCameraCaptureCycleAfterClearingState(void *context)
+{
+    RECAST(instance, context, Camera_SpinelVC0706_t *);
+    instance->state = CameraState_IssueGetImageRequest;
+}
+
+static void IssueStopCommand(Camera_SpinelVC0706_t *instance)
+{
+    uint8_t i = 0;
+    instance->state = CameraState_Uninitialized;
+    for(i = 0; i < GeneralCommandSize; i++)
+    {
+        Uart_SendByte(instance->uart, StopImageCaptureCommand[i]);
+    }
+
+    TimerOneShot_Init(
+        &instance->waitForCameraTimer,
+        instance->timerModule,
+        1000,
+        RestartCameraCaptureCycleAfterClearingState,
+        instance);
+    TimerOneShot_Start(&instance->waitForCameraTimer);
 }
 
 static void ClearState(I_Camera_t *_instance)
@@ -129,8 +152,9 @@ static void ClearState(I_Camera_t *_instance)
     RECAST(instance, _instance, Camera_SpinelVC0706_t *);
     instance->bufferIndex = 0;
     instance->dmaRxDone = false;
-    instance->busy = false;
+    instance->busy = true;
     instance->state = CameraState_Uninitialized;
+    IssueStopCommand(instance);
 }
 
 static const CameraApi_t api =
@@ -193,7 +217,11 @@ void Camera_SpinelVC076_Run(Camera_SpinelVC0706_t *instance)
         {
             if(GeneralAckSize == instance->bufferIndex)
             {
-                Uassert(0 == memcmp(&GetImageAckBytes[0], &instance->receiveBuffer[0], GeneralAckSize));
+                if(!(0 == memcmp(&GetImageAckBytes[0], &instance->receiveBuffer[0], GeneralAckSize)))
+                {
+                    IssueStopCommand(instance);
+                }
+
                 instance->bufferIndex = 0;
                 instance->state = CameraState_IssueGetImageLengthRequest;
             }
@@ -216,7 +244,11 @@ void Camera_SpinelVC076_Run(Camera_SpinelVC0706_t *instance)
         {
             if(GetImageLengthAckSize == instance->bufferIndex)
             {
-                Uassert(0 == memcmp(&GetImageLengthAckBytes[0], &instance->receiveBuffer[0], GetImageLengthAckSize - 2));
+                if(!(0 == memcmp(&GetImageLengthAckBytes[0], &instance->receiveBuffer[0], GetImageLengthAckSize - 2)))
+                {
+                    IssueStopCommand(instance);
+                }
+
                 instance->currentImageLengthHighByte = instance->receiveBuffer[instance->bufferIndex - 2];
                 instance->currentImageLengthLowByte = instance->receiveBuffer[instance->bufferIndex - 1];
 
@@ -295,7 +327,11 @@ void Camera_SpinelVC076_Run(Camera_SpinelVC0706_t *instance)
             {
                 Event_Unsubscribe(Uart_GetOnByteReceivedEvent(instance->uart), &instance->uartSub.interface);
                 Uart_DisableRx(instance->uart);
-                Uassert(0 == memcmp(&StopImageCaptureAckBytes[0], &instance->receiveBuffer[0], GeneralAckSize));
+                if(!(0 == memcmp(&StopImageCaptureAckBytes[0], &instance->receiveBuffer[0], GeneralAckSize)))
+                {
+                    IssueStopCommand(instance);
+                }
+
                 instance->state = CameraState_ImageCycleDone;
             }
             break;

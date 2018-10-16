@@ -25,6 +25,6 @@ void GpioGroupTestDouble_Init(
         GpioGroupTestDouble_t *instance,
         uint8_t mappedGpioSize)
 {
-    instance->gpioStateMap = malloc((size_t)mappedGpioSize);
+    instance->gpioStateMap = (uint8_t *)malloc((size_t)mappedGpioSize);
     instance->interface.api = &api;
 }
