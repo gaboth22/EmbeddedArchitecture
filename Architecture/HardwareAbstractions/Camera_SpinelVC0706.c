@@ -68,6 +68,10 @@ static void StartImageCapture(I_Camera_t *instance)
         Uart_EnableRx(cam->uart);
         cam->state = CameraState_IssueGetImageRequest;
     }
+    else
+    {
+        Event_Publish(&cam->onImageCaptureDone.interface, &cam->image);
+    }
 }
 
 static I_Event_t * GetOnImageCaptureDoneEvent(I_Camera_t *instance)
