@@ -1,3 +1,4 @@
+#include <iostream>
 #include "CppUTest/TestHarness.h"
 
 extern "C"
@@ -63,9 +64,11 @@ TEST(CoordinateQueueTests, SizeShouldDecreaseAccordingly)
         CoordinateQueue_Push(&queue, toPush);
     }
 
-    for(uint8_t i = 3; i >= 0; i--)
+    for(int8_t i = 3; i >= 0; i--)
     {
         CoordinateQueue_Pop(&queue);
         CHECK_EQUAL(i, CoordinateQueue_Size(&queue));
     }
+
+    CHECK_TRUE(CoordinateQueue_Empty(&queue));
 }
