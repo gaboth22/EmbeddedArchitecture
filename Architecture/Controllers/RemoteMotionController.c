@@ -42,7 +42,7 @@ I_Event_t * RemoteMotionController_GetOnMotionAcknowledgedEvent(RemoteMotionCont
 
 void RemoteMotionController_Init(
     RemoteMotionController_t *instance,
-    MotorController_t *motorController,
+    I_MotorController_t *motorController,
     I_Uart_t *wifiUart,
     uint16_t ticksToMoveWhenForward,
     uint16_t ticksToMoveWhenRight,

@@ -1,7 +1,7 @@
 #ifndef REMOTEMOTIONCONTROLLER_H
 #define REMOTEMOTIONCONTROLLER_H
 
-#include "MotorController.h"
+#include "I_MotorController.h"
 #include "EventSubscriber_Synchronous.h"
 #include "Event_Synchronous.h"
 #include "MotionCommnad.h"
@@ -10,7 +10,7 @@
 
 typedef struct
 {
-    MotorController_t *motorController;
+    I_MotorController_t *motorController;
     MotionCommand_t currentCommand;
     I_Uart_t *wifiUart;
     Event_Synchronous_t onMotionAcknowledged;
@@ -46,7 +46,7 @@ I_Event_t * RemoteMotionController_GetOnMotionAcknowledgedEvent(RemoteMotionCont
  */
 void RemoteMotionController_Init(
     RemoteMotionController_t *instance,
-    MotorController_t *motorController,
+    I_MotorController_t *motorController,
     I_Uart_t *wifiUart,
     uint16_t ticksToMoveWhenForward,
     uint16_t ticksToMoveWhenRight,

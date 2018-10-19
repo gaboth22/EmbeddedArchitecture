@@ -1,6 +1,7 @@
 #ifndef MOTORCONTROLLER_H
 #define MOTORCONTROLLER_H
 
+#include "I_MotorController.h"
 #include "EventSubscriber_Synchronous.h"
 #include "I_Event.h"
 #include "I_Pwm.h"
@@ -27,6 +28,7 @@ typedef uint8_t MotorDirection_t;
 
 typedef struct
 {
+    I_MotorController_t interface;
     EventSubscriber_Synchronous_t leftEncoderTickSubscriber;
     EventSubscriber_Synchronous_t rightEncoderTickSubscriber;
     int64_t leftEncoderTick;
@@ -53,34 +55,7 @@ typedef struct
 } MotorController_t;
 
 /*
- * Get instance of MotorController and
- * goal (forward, backwards, left, right)
- */
-void MotorController_Run(MotorController_t *instance);
-
-/*
- * Move Motor controller forward
- */
-void MotorController_Forward(MotorController_t *instance, uint16_t numberOfTicksToMove);
-
-/*
- * Move Motor controller right, turning rightMotorPid backwards on
- * right motor
- */
-void MotorController_TurnRight(MotorController_t *instance, uint16_t numberOfTicksToMove);
-
-/*
- * Move Motor controller left by turning left motor backwards
- */
-void MotorController_TurnLeft(MotorController_t *instance, uint16_t numberOfTicksToMove);
-
-/*
- * Returns true if the controller is moving the motors, false otherwise
- */
-bool MotorController_Busy(MotorController_t *instance);
-
-/*
- * Init Motor Controller
+ * Initialize motor controller
  */
 void MotorController_Init(
     MotorController_t *instance,

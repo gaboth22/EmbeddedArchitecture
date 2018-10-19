@@ -4,6 +4,7 @@ GCC=gcc
 
 #Add include folders here
 INC=Architecture/ \
+	Architecture/Controllers \
 	Architecture/DataStructures \
 	Architecture/Event \
 	Architecture/HardwareAbstractions \
@@ -15,13 +16,16 @@ INC=Architecture/ \
 	
 #Add C++ source files here
 CPP_SRC=Test/main.cpp \
+		Test/Controllers/*.cpp \
 		Test/DataStructures/*.cpp \
 		Test/Doubles/*.cpp \
 		Test/HardwareAbstractions/*.cpp \
 		Test/Timer/*.cpp
 
 #Add C source files here
-C_SRC=Architecture/DataStructures/*.c \
+C_SRC=Architecture/Controllers/DistanceProviderCm.c \
+	Architecture/Controllers/ScoutingController.c \
+	Architecture/DataStructures/*.c \
 	Architecture/Event/*.c \
 	Architecture/HardwareAbstractions/*.c \
 	Architecture/Timer/*.c \
