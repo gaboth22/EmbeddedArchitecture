@@ -54,6 +54,11 @@ struct _DmaControllerApi_t
      * @param channel the channel to get the event for
      */
     I_Event_t * (*GetOnChannelTransferDoneEvent)(I_DmaController_t *instance, uint32_t channel);
+
+    /*
+     * Resets the state, in case any transfer hangs
+     */
+    void (*ClearState)(I_DmaController_t *instance);
 };
 
 #define DmaController_SetChannelSourceTrigger(_instance, _channel, _config) \
@@ -67,5 +72,8 @@ struct _DmaControllerApi_t
 
 #define DmaController_GetOnChannelTransferDoneEvent(_instance, _channel) \
         (_instance)->api->GetOnChannelTransferDoneEvent(_instance, _channel) \
+
+#define DmaController_ClearState(_instance) \
+        (_instance)->api->ClearState(_instance) \
 
 #endif

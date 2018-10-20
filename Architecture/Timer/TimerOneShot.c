@@ -12,6 +12,7 @@ static void CallTimerCallback(void *context, void *args)
     if(*currentTime - timer->startTicks >= timer->expiryTicks)
     {
         Event_Unsubscribe(TimerModule_GetPeriodEvent(timer->timerModule), &timer->timerModuleSubscriber.interface);
+        timer->running = false;
         timer->callback(timer->context);
     }
 }

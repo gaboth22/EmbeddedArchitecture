@@ -3,6 +3,7 @@
 
 #include "MotorController.h"
 #include "EventSubscriber_Synchronous.h"
+#include "Event_Synchronous.h"
 #include "MotionCommnad.h"
 #include "I_Uart.h"
 #include "types.h"
@@ -12,10 +13,14 @@ typedef struct
     MotorController_t *motorController;
     MotionCommand_t currentCommand;
     I_Uart_t *wifiUart;
+    Event_Synchronous_t onMotionAcknowledged;
     EventSubscriber_Synchronous_t uartSub;
     uint8_t ackCount;
     bool busy;
     bool newCommand;
+    uint16_t fwdTicks;
+    uint16_t leftTicks;
+    uint16_t rightTicks;
 } RemoteMotionController_t;
 
 /*
@@ -30,6 +35,11 @@ void RemoteMotionController_Run(RemoteMotionController_t *instance);
 void RemoteMotionController_DoMotion(RemoteMotionController_t *instance);
 
 /*
+ * Get event that fires when a motion command is acknowledged
+ */
+I_Event_t * RemoteMotionController_GetOnMotionAcknowledgedEvent(RemoteMotionController_t *instance);
+
+/*
  * Initialize the remote motion controller
  * @param instance The object
  * @param motorController A motor controller
@@ -37,6 +47,9 @@ void RemoteMotionController_DoMotion(RemoteMotionController_t *instance);
 void RemoteMotionController_Init(
     RemoteMotionController_t *instance,
     MotorController_t *motorController,
-    I_Uart_t *wifiUart);
+    I_Uart_t *wifiUart,
+    uint16_t ticksToMoveWhenForward,
+    uint16_t ticksToMoveWhenRight,
+    uint16_t ticksToMoveWhenLeft);
 
 #endif
