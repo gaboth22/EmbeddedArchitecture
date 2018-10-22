@@ -2,6 +2,47 @@
 #include "GpioTable.h"
 #include "Utils.h"
 
+enum
+{
+    PeriodToDoSmoothStartupCycleMs = 5
+};
+
+static void DoSmoothPwmStartup(void *context)
+{
+    RECAST(instance, context, MotorController_t *);
+    instance->runningSmoothnessFactor -= 1;
+
+    if(instance->runningSmoothnessFactor <= 0)
+    {
+        instance->stopSmoothnessTimer = true;
+    }
+}
+
+static int64_t GetSmoothedOutPidOutput(MotorController_t *instance, int64_t pidOutput)
+{
+    if(instance->doSmoothStartup)
+    {
+        if(pidOutput > 0)
+        {
+            pidOutput -= instance->runningSmoothnessFactor;
+            if(pidOutput < 0)
+            {
+                pidOutput = 0;
+            }
+        }
+        else
+        {
+            pidOutput += instance->runningSmoothnessFactor;
+            if(pidOutput > 0)
+            {
+                pidOutput = 0;
+            }
+        }
+    }
+
+    return pidOutput;
+}
+
 static void LeftEncoderCallback(void *context, void *args)
 {
     IGNORE(args);
@@ -35,6 +76,7 @@ static void RightEncoderCallback(void *context, void *args)
 static void MotorController_RunPidForward(MotorController_t *instance)
 {
     int64_t leftMotorPidOutput = PidController_Run(instance->leftPid, instance->leftEncoderTick, instance->leftMotorDistanceToMove);
+    leftMotorPidOutput = GetSmoothedOutPidOutput(instance, leftMotorPidOutput);
 
     if(leftMotorPidOutput < 0)
     {
@@ -50,6 +92,7 @@ static void MotorController_RunPidForward(MotorController_t *instance)
     }
 
     int64_t rightMotorPidOutput = PidController_Run(instance->rightPid, instance->rightEncoderTick, instance->rightMotorDistanceToMove);
+    rightMotorPidOutput = GetSmoothedOutPidOutput(instance, rightMotorPidOutput);
 
     if(rightMotorPidOutput < 0)
     {
@@ -73,6 +116,7 @@ static void MotorController_RunPidForward(MotorController_t *instance)
 static void MotorController_RunPidRight(MotorController_t *instance)
 {
     int64_t leftMotorPidOutput = PidController_Run(instance->leftPid, instance->leftEncoderTick, instance->leftMotorDistanceToMove);
+    leftMotorPidOutput = GetSmoothedOutPidOutput(instance, leftMotorPidOutput);
 
     if(leftMotorPidOutput < 0)
     {
@@ -88,6 +132,7 @@ static void MotorController_RunPidRight(MotorController_t *instance)
     }
 
     int64_t rightMotorPidOutput = PidController_Run(instance->rightPid, instance->rightEncoderTick, instance->rightMotorDistanceToMove);
+    rightMotorPidOutput = GetSmoothedOutPidOutput(instance, rightMotorPidOutput);
 
     if(rightMotorPidOutput < 0)
     {
@@ -111,6 +156,7 @@ static void MotorController_RunPidRight(MotorController_t *instance)
 static void MotorController_RunPidLeft(MotorController_t *instance)
 {
     int64_t leftMotorPidOutput = PidController_Run(instance->leftPid, instance->leftEncoderTick, instance->leftMotorDistanceToMove);
+    leftMotorPidOutput = GetSmoothedOutPidOutput(instance, leftMotorPidOutput);
 
     if(leftMotorPidOutput < 0)
     {
@@ -126,6 +172,7 @@ static void MotorController_RunPidLeft(MotorController_t *instance)
     }
 
     int64_t rightMotorPidOutput = PidController_Run(instance->rightPid, instance->rightEncoderTick, instance->rightMotorDistanceToMove);
+    rightMotorPidOutput = GetSmoothedOutPidOutput(instance, rightMotorPidOutput);
 
     if(rightMotorPidOutput < 0)
     {
@@ -151,32 +198,53 @@ static void MotorController_SetupDirection(MotorController_t *instance, uint16_t
     instance->leftEncoderTick = 0;
     instance->rightEncoderTick = 0;
     instance->leftMotorDistanceToMove = distanceToMove;
-    instance->rightMotorDistanceToMove = (distanceToMove - 8); // offset bc right motor tends to spin for more
+    instance->rightMotorDistanceToMove = (distanceToMove - 7);
 }
 
 void MotorController_Forward(MotorController_t *instance, uint16_t distanceToMove)
 {
     instance->busy = true;
+    instance->doSmoothStartup = true;
+    instance->stopSmoothnessTimer = false;
+    instance->runningSmoothnessFactor = instance->smoothnessFactor;
     MotorController_SetupDirection(instance, distanceToMove);
     instance->controllerDirection = ControllerDirection_Forward;
+
+    TimerPeriodic_Start(&instance->smoothStartupTimer);
 }
 
 void MotorController_TurnRight(MotorController_t *instance, uint16_t distanceToMove)
 {
     instance->busy = true;
+    instance->doSmoothStartup = true;
+    instance->stopSmoothnessTimer = false;
+    instance->runningSmoothnessFactor = instance->smoothnessFactor;
     MotorController_SetupDirection(instance, distanceToMove);
     instance->controllerDirection = ControllerDirection_Right;
+
+    TimerPeriodic_Start(&instance->smoothStartupTimer);
 }
 
 void MotorController_TurnLeft(MotorController_t *instance, uint16_t distanceToMove)
 {
     instance->busy = true;
+    instance->doSmoothStartup = true;
+    instance->stopSmoothnessTimer = false;
+    instance->runningSmoothnessFactor = instance->smoothnessFactor;
     MotorController_SetupDirection(instance, distanceToMove);
     instance->controllerDirection = ControllerDirection_Left;
+
+    TimerPeriodic_Start(&instance->smoothStartupTimer);
 }
 
 void MotorController_Run(MotorController_t *instance)
 {
+    if(instance->stopSmoothnessTimer)
+    {
+        instance->doSmoothStartup = false;
+        TimerPeriodic_Command(&instance->smoothStartupTimer, TimerPeriodicCommand_Stop);
+    }
+
     switch(instance->controllerDirection)
     {
         case ControllerDirection_Forward:
@@ -207,7 +275,9 @@ void MotorController_Init(
     I_Pwm_t *pwmRightFwd,
     I_Pwm_t *pwmRightBwd,
     PidController_t *leftPid,
-    PidController_t *rightPid)
+    PidController_t *rightPid,
+    TimerModule_t *timerModule,
+    int64_t smoothnessFactor)
 {
     instance->busy = false;
 
@@ -227,6 +297,17 @@ void MotorController_Init(
 
     instance->leftPid = leftPid;
     instance->rightPid = rightPid;
+
+    instance->doSmoothStartup = false;
+    instance->smoothnessFactor = smoothnessFactor;
+    instance->stopSmoothnessTimer = false;
+
+    TimerPeriodic_Init(
+        &instance->smoothStartupTimer,
+        timerModule,
+        PeriodToDoSmoothStartupCycleMs,
+        DoSmoothPwmStartup,
+        instance);
 
     EventSubscriber_Synchronous_Init(&instance->leftEncoderTickSubscriber, LeftEncoderCallback, instance);
     Event_Subscribe(leftEncoderEvent, &instance->leftEncoderTickSubscriber.interface);

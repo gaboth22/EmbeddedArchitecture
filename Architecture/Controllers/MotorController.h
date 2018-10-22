@@ -6,6 +6,8 @@
 #include "I_Pwm.h"
 #include "PidController.h"
 #include "types.h"
+#include "TimerPeriodic.h"
+#include "TimerModule.h"
 
 enum ControllerDirection
 {
@@ -43,6 +45,11 @@ typedef struct
     uint16_t leftMotorDistanceToMove;
     uint16_t rightMotorDistanceToMove;
     bool busy;
+    bool doSmoothStartup;
+    bool stopSmoothnessTimer;
+    int64_t smoothnessFactor;
+    int64_t runningSmoothnessFactor;
+    TimerPeriodic_t smoothStartupTimer;
 } MotorController_t;
 
 /*
@@ -84,6 +91,8 @@ void MotorController_Init(
     I_Pwm_t *pwmRightFwd,
     I_Pwm_t *pwmRightBwd,
     PidController_t *leftPid,
-    PidController_t *rightPid);
+    PidController_t *rightPid,
+    TimerModule_t *timerModule,
+    int64_t smoothnessFactor);
 
 #endif
