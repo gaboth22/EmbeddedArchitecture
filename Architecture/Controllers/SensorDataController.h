@@ -9,6 +9,14 @@
 #include "LcdDisplayController.h"
 #include "TimerOneShot.h"
 
+enum DistanceSensor
+{
+    DistanceSensor_Front = 0,
+    DistanceSensor_Right,
+    DistanceSensor_Left,
+};
+typedef uint8_t DistanceSensor_t;
+
 typedef struct
 {
     DistanceSensor_SharpGP2Y0A41SK0F_t *frontIrSensor;
@@ -20,7 +28,9 @@ typedef struct
     TimerTicks_t sensorDataOutputToLcdExpiryMs;
     LcdDisplayController_t *lcdDisplayController;
     char leftDistanceIntToString[2];
-    char rightDistanceIntToString;
+    char rightDistanceIntToString[2];
+    char frontDistanceIntToString[2];
+    DistanceSensor_t currentDistanceSensorOutputtingToLcd;
 } SensorDataController_t;
 
 void SensorDataController_Init(
