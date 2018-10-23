@@ -121,7 +121,7 @@ LcdDisplayParallel2Line_t * LcdDisplayParallel2Line_Init(
         GpioChannel_t EnableChannel,
         GpioChannel_t RWChannel,
         GpioChannel_t RSChannel,
-        GpioChannel_t BusyBitChannel,
+        GpioChannel_t BusyBitChannel, //d7
         TimerModule_t *timerModule)
 {
     instance.interface.api = &lcdDisplayParallel2LineAlarmClockApi;
