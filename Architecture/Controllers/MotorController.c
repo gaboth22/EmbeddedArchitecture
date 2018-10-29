@@ -193,12 +193,12 @@ static void MotorController_RunPidLeft(MotorController_t *instance)
     }
 }
 
-static void MotorController_SetupDirection(MotorController_t *instance, uint16_t distanceToMove)
+static void MotorController_SetupDirection(MotorController_t *instance, uint16_t distanceToMoveL, uint16_t distanceToMoveR)
 {
     instance->leftEncoderTick = 0;
     instance->rightEncoderTick = 0;
-    instance->leftMotorDistanceToMove = distanceToMove;
-    instance->rightMotorDistanceToMove = (distanceToMove - 7);
+    instance->leftMotorDistanceToMove = distanceToMoveL;
+    instance->rightMotorDistanceToMove = distanceToMoveR;
 }
 
 void MotorController_Forward(MotorController_t *instance, uint16_t distanceToMove)
@@ -207,7 +207,7 @@ void MotorController_Forward(MotorController_t *instance, uint16_t distanceToMov
     instance->doSmoothStartup = true;
     instance->stopSmoothnessTimer = false;
     instance->runningSmoothnessFactor = instance->smoothnessFactor;
-    MotorController_SetupDirection(instance, distanceToMove);
+    MotorController_SetupDirection(instance, distanceToMove, distanceToMove - 3);
     instance->controllerDirection = ControllerDirection_Forward;
 
     TimerPeriodic_Start(&instance->smoothStartupTimer);
@@ -219,7 +219,7 @@ void MotorController_TurnRight(MotorController_t *instance, uint16_t distanceToM
     instance->doSmoothStartup = true;
     instance->stopSmoothnessTimer = false;
     instance->runningSmoothnessFactor = instance->smoothnessFactor;
-    MotorController_SetupDirection(instance, distanceToMove);
+    MotorController_SetupDirection(instance, distanceToMove, distanceToMove - 15);
     instance->controllerDirection = ControllerDirection_Right;
 
     TimerPeriodic_Start(&instance->smoothStartupTimer);
@@ -231,7 +231,7 @@ void MotorController_TurnLeft(MotorController_t *instance, uint16_t distanceToMo
     instance->doSmoothStartup = true;
     instance->stopSmoothnessTimer = false;
     instance->runningSmoothnessFactor = instance->smoothnessFactor;
-    MotorController_SetupDirection(instance, distanceToMove);
+    MotorController_SetupDirection(instance, distanceToMove, distanceToMove - 15);
     instance->controllerDirection = ControllerDirection_Left;
 
     TimerPeriodic_Start(&instance->smoothStartupTimer);

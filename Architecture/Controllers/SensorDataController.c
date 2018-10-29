@@ -4,7 +4,7 @@
 
 enum
 {
-    distanceCap = 50
+    distanceCapCm = 50
 };
 
 static void Uint8To2LengthString(uint8_t data, char *buffer)
@@ -46,24 +46,18 @@ static void SensorDataOutputToLcd(void *context)
 {
     RECAST(instance, context, SensorDataController_t *);
 
-    uint8_t byte1;
-    uint8_t byte0;
-
-    DistanceInCm_t rightDistance = DistanceSensor_GetDistanceInCm(&instance->ultraSonicRight->interface);
-    DistanceInCm_t leftDistance = DistanceSensor_GetDistanceInCm(&instance->ultraSonicLeft->interface);
-    DistanceInCm_t frontDistance = DistanceSensor_GetDistanceInCm(&instance->frontIrSensor->interface);
+    DistanceInCm_t rightDistance = DistanceSensor_GetDistanceInCm(instance->ultraSonicRight);
+    DistanceInCm_t leftDistance = DistanceSensor_GetDistanceInCm(instance->ultraSonicLeft);
+    DistanceInCm_t frontDistance = DistanceSensor_GetDistanceInCm(instance->frontIrSensor);
 
     switch(instance->currentDistanceSensorOutputtingToLcd)
     {
         case DistanceSensor_Left:
             LcdDisplayController_SetCursorIndex(instance->lcdDisplayController, 2, 0);
 
-            if(leftDistance < distanceCap)
+            if(leftDistance < distanceCapCm)
             {
-                byte1 = (uint8_t)leftDistance /10;
-                byte0 = (uint8_t)leftDistance %10;
-                instance->leftDistanceIntToString[0] = (byte1 + '0');
-                instance->leftDistanceIntToString[1] = (byte0 + '0');
+                Uint8To2LengthString((uint8_t)leftDistance, &instance->leftDistanceIntToString[0]);
             }
             else{
                 instance->leftDistanceIntToString[0] = 'n';
@@ -74,12 +68,9 @@ static void SensorDataOutputToLcd(void *context)
         case DistanceSensor_Right:
             LcdDisplayController_SetCursorIndex(instance->lcdDisplayController, 2, 14);
 
-            if(rightDistance < distanceCap)
+            if(rightDistance < distanceCapCm)
             {
-                byte1 = (uint8_t)rightDistance /10;
-                byte0 = (uint8_t)rightDistance %10;
-                instance->rightDistanceIntToString[0] = (byte1 + '0');
-                instance->rightDistanceIntToString[1] = (byte0 + '0');
+                Uint8To2LengthString((uint8_t)rightDistance, &instance->rightDistanceIntToString[0]);
             }
             else
             {
@@ -91,12 +82,9 @@ static void SensorDataOutputToLcd(void *context)
         case DistanceSensor_Front:
             LcdDisplayController_SetCursorIndex(instance->lcdDisplayController, 1, 7);
 
-            if(frontDistance < distanceCap)
+            if(frontDistance < distanceCapCm)
             {
-                byte1 = (uint8_t)frontDistance /10;
-                byte0 = (uint8_t)frontDistance %10;
-                instance->frontDistanceIntToString[0] = (byte1 + '0');
-                instance->frontDistanceIntToString[1] = (byte0 + '0');
+                Uint8To2LengthString((uint8_t)frontDistance, &instance->frontDistanceIntToString[0]);
             }
             else
             {
@@ -114,11 +102,12 @@ static void SensorDataOutputToLcd(void *context)
 
 void SensorDataController_Init(
         SensorDataController_t *instance,
-        DistanceSensor_SharpGP2Y0A41SK0F_t *frontIrSensor,
-        DistanceSensor_UltraSonicHCSR01_t *ultraSonicLeft,
-        DistanceSensor_UltraSonicHCSR01_t *ultraSonicRight,
+        I_DistanceSensor_t *frontIrSensor,
+        I_DistanceSensor_t *ultraSonicLeft,
+        I_DistanceSensor_t *ultraSonicRight,
         TimerModule_t *timerModule,
         LcdDisplayController_t *lcdDisplayController)
+
 {
     instance->frontIrSensor = frontIrSensor;
     instance->ultraSonicLeft = ultraSonicLeft;
@@ -127,7 +116,7 @@ void SensorDataController_Init(
     instance->lcdDisplayController = lcdDisplayController;
 
     instance->clearLcdExpiryMs = 50;
-    instance->sensorDataOutputToLcdExpiryMs = 250;
+    instance->sensorDataOutputToLcdExpiryMs = 100;
 
     instance->currentDistanceSensorOutputtingToLcd = DistanceSensor_Left;
 

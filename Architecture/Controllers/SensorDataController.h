@@ -19,9 +19,9 @@ typedef uint8_t DistanceSensor_t;
 
 typedef struct
 {
-    DistanceSensor_SharpGP2Y0A41SK0F_t *frontIrSensor;
-    DistanceSensor_UltraSonicHCSR01_t *ultraSonicLeft;
-    DistanceSensor_UltraSonicHCSR01_t *ultraSonicRight;
+    I_DistanceSensor_t *frontIrSensor;
+    I_DistanceSensor_t *ultraSonicLeft;
+    I_DistanceSensor_t *ultraSonicRight;
     TimerPeriodic_t doSensorDataOutputToLcd;
     TimerOneShot_t clearLcdOneTimeTimer;
     TimerTicks_t clearLcdExpiryMs;
@@ -35,9 +35,9 @@ typedef struct
 
 void SensorDataController_Init(
         SensorDataController_t *instance,
-        DistanceSensor_SharpGP2Y0A41SK0F_t *frontIrSensor,
-        DistanceSensor_UltraSonicHCSR01_t *ultraSonicLeft,
-        DistanceSensor_UltraSonicHCSR01_t *ultraSonicRight,
+        I_DistanceSensor_t *frontIrSensor,
+        I_DistanceSensor_t *ultraSonicLeft,
+        I_DistanceSensor_t *ultraSonicRight,
         TimerModule_t *timerModule,
         LcdDisplayController_t *lcdDisplayController);
 
