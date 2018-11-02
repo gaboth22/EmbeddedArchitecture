@@ -61,18 +61,18 @@ void GridMap_FirstQuadrant5cmCell3m2x3m2_GetIndicesOfAdjacents(
 
     /* N */
     *indices = x;
-    *(indices + 1) = y + 1;
+    *(indices + 1) = ((y + 1) > 63) ? -1 : (y + 1);
 
     /* W */
-    *(indices + 2) = x - 1;
+    *(indices + 2) = ((x - 1) < 0) ? -1 : (x - 1);
     *(indices + 3) = y;
 
     /* S */
     *(indices + 4) = x;
-    *(indices + 5) = y - 1;
+    *(indices + 5) = ((y - 1) < 0) ? -1 : (y - 1);
 
     /* E */
-    *(indices + 6) = x + 1;
+    *(indices + 6) = ((x + 1) > 63) ? -1 : (x + 1);
     *(indices + 7) = y;
 }
 
