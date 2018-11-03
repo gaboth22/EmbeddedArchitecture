@@ -20,16 +20,10 @@ typedef struct
 
 typedef struct
 {
-    XYCoordinate_t location;
-    uint8_t cost;
-} CellWithCost_t;
-
-typedef struct
-{
     I_PathFinder_t interface;
     CellWithInfo_t aStarGridInfo[MaxGridSize][MaxGridSize];
     GridMap_FirstQuadrant5cmCell3m2x3m2_t visited;
-    CellWithCost_t nonVisitedDataBuffer[255];
+    XYCoordinate_t nonVisitedDataBuffer[255];
     Queue_t nonVisited;
     XYCoordinate_t finalPathDataBuffer[255];
     Stack_t finalPath;

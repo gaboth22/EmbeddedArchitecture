@@ -24,6 +24,7 @@ CPP_SRC=Test/main.cpp \
 
 #Add C source files here
 C_SRC=Architecture/Controllers/DistanceProviderCm.c \
+	Architecture/Controllers/PathFinder_AStar.c \
 	Architecture/Controllers/ScoutingController.c \
 	Architecture/Controllers/WayPointProvider_Unscouted.c \
 	Architecture/DataStructures/*.c \

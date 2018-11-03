@@ -1,8 +1,9 @@
 #ifndef I_PATHFINDER_H
 #define I_PATHFINDER_H
 
-#include "CoordinateStack.h"
+#include "Stack.h"
 #include "GridMap_FirstQuadrant5cmCell3m2x3m2.h"
+#include "XYCoordinate.h"
 
 typedef struct _PathFinderApi_t PathFinderApi_t;
 
@@ -20,7 +21,7 @@ struct _PathFinderApi_t
      * @param src the source point
      * @param dst the destination point
      */
-    CoordinateStack_t * (*GetPath)(
+    Stack_t * (*GetPath)(
         I_PathFinder_t *instance,
         GridMap_FirstQuadrant5cmCell3m2x3m2_t *blockedMap,
         XYCoordinate_t src,
