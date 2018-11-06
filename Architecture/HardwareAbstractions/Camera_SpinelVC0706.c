@@ -3,6 +3,7 @@
 #include "Camera_SpinelVC0706.h"
 #include "Uassert.h"
 #include "utils.h"
+#include "msp.h"
 
 enum
 {
@@ -161,6 +162,12 @@ static void ClearState(I_Camera_t *_instance)
     IssueStopCommand(instance);
 }
 
+static void DebugTimerOneShot(void *context)
+{
+    IGNORE(context);
+    __no_operation();
+}
+
 static const CameraApi_t api =
     { StartImageCapture, GetOnImageCaptureDoneEvent, ClearState };
 
@@ -280,18 +287,19 @@ void Camera_SpinelVC076_Run(Camera_SpinelVC0706_t *instance)
         {
             instance->dmaRxDone = false;
             instance->state = CameraState_ImageDataTransferRequestIssued;
+
             DmaController_SetChannelSourceTrigger(instance->dmaController, instance->dmaChannel, NULL);
             DmaController_SetChannelTransferConfig(instance->dmaController, instance->dmaChannel, NULL);
 
             DmaController_SetAndStartChannelTrasfer(
-                    instance->dmaController,
-                    instance->dmaChannel,
-                    NULL,
-                    instance->addressOfUartRxBuffer,
-                    instance->imageBuffer,
-                    GetConcatenatedImageLength(
-                        instance->currentImageLengthHighByte,
-                        instance->currentImageLengthLowByte) + ExtraBytesForCameraAck);
+                instance->dmaController,
+                instance->dmaChannel,
+                NULL,
+                instance->addressOfUartRxBuffer,
+                instance->imageBuffer,
+                GetConcatenatedImageLength(
+                    instance->currentImageLengthHighByte,
+                    instance->currentImageLengthLowByte) + ExtraBytesForCameraAck);
 
             ReadImageDataCommandBytes[ImageLengthHighByteIndex] = instance->currentImageLengthHighByte;
             ReadImageDataCommandBytes[ImageLengthLowByteIndex] = instance->currentImageLengthLowByte;

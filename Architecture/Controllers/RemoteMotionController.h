@@ -21,6 +21,7 @@ typedef struct
     uint16_t fwdTicks;
     uint16_t leftTicks;
     uint16_t rightTicks;
+    TimerPeriodic_t periodicMotionTimer;
 } RemoteMotionController_t;
 
 /*
@@ -50,6 +51,7 @@ void RemoteMotionController_Init(
     I_Uart_t *wifiUart,
     uint16_t ticksToMoveWhenForward,
     uint16_t ticksToMoveWhenRight,
-    uint16_t ticksToMoveWhenLeft);
+    uint16_t ticksToMoveWhenLeft,
+    TimerModule_t *timerModule);
 
 #endif

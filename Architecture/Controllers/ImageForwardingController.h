@@ -7,6 +7,8 @@
 #include "EventSubscriber_Synchronous.h"
 #include "Event_Synchronous.h"
 #include "types.h"
+#include "TimerModule.h"
+#include "TimerPeriodic.h"
 
 typedef struct
 {
@@ -22,6 +24,9 @@ typedef struct
     void *outputUartTxBufferAddress;
     bool receivedAck;
     bool dmaTxDone;
+    TimerPeriodic_t periodicForwardImageTimer;
+    bool busy;
+    CameraImage_t *image;
 } ImageForwardingController_t;
 
 /*
@@ -39,7 +44,8 @@ void ImageForwardingController_Init(
         I_Uart_t *wifiUart,
         I_DmaController_t *dmaController,
         uint32_t imageTrxDmaChannel,
-        void *outputUartTxBufferAddress);
+        void *outputUartTxBufferAddress,
+        TimerModule_t *timerModule);
 
 /*
  * Clear camera and DMA state if comm hangs

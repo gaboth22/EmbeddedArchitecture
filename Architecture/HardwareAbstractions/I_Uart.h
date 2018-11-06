@@ -38,6 +38,16 @@ struct _UartApi_t
 	 * Enable RX
 	 */
 	void (*EnableRx)(I_Uart_t *instance);
+
+	/*
+	 * Acquire resources
+	 */
+	bool (*Acquire)(I_Uart_t *instance);
+
+	/*
+	 * Release resources
+	 */
+	void (*Release)(I_Uart_t *instance);
 };
 
 #define Uart_SendByte(_instance, _byte) \
@@ -54,5 +64,11 @@ struct _UartApi_t
 
 #define Uart_EnableRx(_instance) \
         (_instance)->api->EnableRx(_instance) \
+
+#define Uart_Acquire(_instance) \
+        (_instance)->api->Acquire(_instance) \
+
+#define Uart_Release(_instance) \
+        (_instance)->api->Release(_instance) \
 
 #endif

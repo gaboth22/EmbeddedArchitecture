@@ -24,38 +24,6 @@ enum
     PeriodToRestartCaptureMs = 5000
 };
 
-static void MoveOnToImageCaptureCycle(void *context, void *args)
-{
-    RECAST(instance, context, CommunicationArbiter_t *);
-    IGNORE(args);
-
-    TimerOneShot_Stop(&instance->checkStateTimer);
-    instance->state = RunningState_DoImageCaptureCycle;
-}
-
-static void MoveOnToMotionCycle(void *context, void *args)
-{
-    RECAST(instance, context, CommunicationArbiter_t *);
-    IGNORE(args);
-
-    TimerOneShot_Stop(&instance->checkStateTimer);
-    instance->state = RunningState_DoMotionCommandCycle;
-}
-
-static void RestartCapture(void *context)
-{
-    RECAST(instance, context, CommunicationArbiter_t *);
-    instance->state = RunningState_DoImageCaptureCycle;
-}
-
-static void ClearCommState(void *context)
-{
-    RECAST(instance, context, CommunicationArbiter_t *);
-    instance->motionAckCount = 0;
-    ImageForwardingController_ClearState(instance->imageForwardingController);
-    TimerOneShot_Start(&instance->delayCaptureTimer);
-}
-
 void CommunicationArbiter_Init(
     CommunicationArbiter_t *instance,
     RemoteMotionController_t *remoteMotionController,
@@ -67,54 +35,13 @@ void CommunicationArbiter_Init(
     instance->state = RunningState_StartCommCheck;
     instance->motionAckCount = 0;
     instance->timerModule = timerModule;
-
-    TimerOneShot_Init(
-        &instance->checkStateTimer,
-        timerModule,
-        PeriodToConsiderCommDeadMs,
-        ClearCommState,
-        instance);
-
-    TimerOneShot_Init(
-        &instance->delayCaptureTimer,
-        timerModule,
-        PeriodToRestartCaptureMs,
-        RestartCapture,
-        instance);
-
-    EventSubscriber_Synchronous_Init(&instance->imageForwardedSub, MoveOnToMotionCycle, instance);
-    Event_Subscribe(
-        ImageForwardingController_GetOnImageForwardedEvent(imageForwardingController),
-        &instance->imageForwardedSub.interface);
-
-    EventSubscriber_Synchronous_Init(&instance->motionAcknowledgedSub, MoveOnToImageCaptureCycle, instance);
-    Event_Subscribe(
-        RemoteMotionController_GetOnMotionAcknowledgedEvent(remoteMotionController),
-        &instance->motionAcknowledgedSub.interface);
 }
 
 void CommunicationArbiter_Run(CommunicationArbiter_t *instance)
 {
-    switch(instance->state)
-    {
-        case RunningState_StartCommCheck:
-            TimerOneShot_Start(&instance->checkStateTimer);
-            instance->state = RunningState_DoImageCaptureCycle;
-            break;
+    ImageForwardingController_ForwardOneImage(instance->imageForwardingController);
+    ImageForwardingController_Run(instance->imageForwardingController);
 
-        case RunningState_DoImageCaptureCycle:
-            instance->state = RunningState_Unitialized;
-            TimerOneShot_Start(&instance->checkStateTimer);
-            ImageForwardingController_ForwardOneImage(instance->imageForwardingController);
-            break;
-
-        case RunningState_DoMotionCommandCycle:
-            instance->state = RunningState_Unitialized;
-            TimerOneShot_Start(&instance->checkStateTimer);
-            RemoteMotionController_DoMotion(instance->remoteMotionController);
-            break;
-
-        default:
-            break;
-    }
+    RemoteMotionController_DoMotion(instance->remoteMotionController);
+    RemoteMotionController_Run(instance->remoteMotionController);
 }
