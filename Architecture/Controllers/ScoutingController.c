@@ -215,6 +215,7 @@ static void PopulateGridsAndUpdatePosition(ScoutingController_t *instance, Dista
 
 static void TurnTowardsDirection(ScoutingController_t *instance, XYCoordinate_t heading)
 {
+    DistanceProviderCm_DisableDistanceTracking(instance->distanceProvider);
     if(heading.x > instance->xpos)
     {
         switch(instance->currentHeading)
@@ -307,6 +308,7 @@ void ScoutingController_Run(ScoutingController_t *instance)
                 {
                     instance->state = MonitorForwardDistanceToStop;
                     PopulateGridsAndUpdatePosition(instance, 0);
+                    DistanceProviderCm_EnableDistanceTracking(instance->distanceProvider);
 
                     MotorController_Forward(
                         instance->motorController,
@@ -329,7 +331,7 @@ void ScoutingController_Run(ScoutingController_t *instance)
                     }
 
                     DistanceInCm_t forwardDistanceWithoutObstacle =
-                            DistanceSensor_GetDistanceInCm(instance->frontSensor);
+                        DistanceSensor_GetDistanceInCm(instance->frontSensor);
 
                     if(forwardDistanceWithoutObstacle <= ForwardDistanceThresholdForTurnCm)
                     {

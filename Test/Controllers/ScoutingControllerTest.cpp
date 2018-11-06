@@ -64,8 +64,6 @@ TEST_GROUP(ScoutingControllerTests)
             TicksToMove5Cm,
             TicksToMove1Cm);
 
-        DistanceProviderCm_EnableDistanceTracking(&distanceProvider);
-
         WayPointProvider_Unscouted_Init(
             &wayPointProvider,
             &scoutingController.visitedAreasGrid,

@@ -14,7 +14,7 @@ uint8_t Queue_Size(Queue_t *instance)
 void Queue_Push(Queue_t *instance, void *data)
 {
     memcpy(
-        (instance->dataBuffer + (instance->pushIndex * instance->sizeOfType)),
+        ((uint8_t *)instance->dataBuffer + (instance->pushIndex * instance->sizeOfType)),
         data,
         instance->sizeOfType);
 
@@ -26,7 +26,7 @@ void Queue_Pop(Queue_t *instance, void *data)
 {
     memcpy(
         data,
-        (instance->dataBuffer + (instance->popIndex * instance->sizeOfType)),
+        ((uint8_t *)instance->dataBuffer + (instance->popIndex * instance->sizeOfType)),
         instance->sizeOfType);
 
     instance->size--;

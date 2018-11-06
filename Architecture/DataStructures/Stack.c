@@ -14,7 +14,7 @@ uint8_t Stack_Size(Stack_t *instance)
 void Stack_Push(Stack_t *instance, void *data)
 {
     memcpy(
-        (instance->dataBuffer + (instance->index * instance->sizeOfType)),
+        ((uint8_t *)instance->dataBuffer + (instance->index * instance->sizeOfType)),
         data,
         instance->sizeOfType);
 
@@ -29,7 +29,7 @@ void Stack_Pop(Stack_t *instance, void *data)
 
     memcpy(
         data,
-        (instance->dataBuffer + (instance->index * instance->sizeOfType)),
+        ((uint8_t *)instance->dataBuffer + (instance->index * instance->sizeOfType)),
         instance->sizeOfType);
 }
 
