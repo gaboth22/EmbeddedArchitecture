@@ -3,7 +3,10 @@
 
 #include "GridMap_FirstQuadrant5cmCell3m2x3m2.h"
 #include "I_MotorController.h"
+#include "I_PathFinder.h"
+#include "I_WayPointProvider.h"
 #include "DistanceProviderCm.h"
+#include "Stack.h"
 
 typedef struct
 {
@@ -14,6 +17,9 @@ typedef struct
     I_DistanceSensor_t *rightSensor;
     I_MotorController_t *motorController;
     DistanceProviderCm_t *distanceProvider;
+    I_WayPointProvider_t *waypointProvider;
+    I_PathFinder_t *pathFinder;
+    Stack_t *path;
     DistanceInCm_t runningDistance;
     uint8_t state;
     bool start;
@@ -39,6 +45,9 @@ void ScoutingController_Run(ScoutingController_t *instance);
  * @param leftSensor left distance sensor
  * @param rightSensor right distance sensor
  * @param motorController motor controller instance
+ * @param distanceProvider module that provides how much we have moved
+ * @param unscoutedWaypointProvider module to that provides the next unscouted point
+ * @param pathFinder module that provides the path from a source point to a destination
  */
 void ScoutingController_Init(
     ScoutingController_t *instance,
@@ -46,6 +55,10 @@ void ScoutingController_Init(
     I_DistanceSensor_t *leftSensor,
     I_DistanceSensor_t *rightSensor,
     I_MotorController_t *motorController,
-    DistanceProviderCm_t *distanceProvider);
+    DistanceProviderCm_t *distanceProvider,
+    I_WayPointProvider_t *unscoutedWaypointProvider,
+    I_PathFinder_t *pathFinder,
+    uint8_t startX,
+    uint8_t startY);
 
 #endif

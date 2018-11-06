@@ -18,7 +18,7 @@ TEST_GROUP(WayPointProvider_UnscoutedTests)
 
     void setup()
     {
-        UnscoutedHeadingProvider_Init(&wayPointProvider, &visited, &blocked);
+        WayPointProvider_Unscouted_Init(&wayPointProvider, &visited, &blocked);
     }
 
     XYCoordinate_t GetWayPointBasedOnCurrentMapsAndcurrentPos(uint64_t *vis, uint64_t *blk, XYCoordinate_t curPos)

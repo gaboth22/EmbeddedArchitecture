@@ -21,7 +21,7 @@ typedef struct
  * @param visitedGrid Grid Map with visited nodes flagged
  * @param blockedGrid Gird Map with blocked nodes flagged
  */
-void UnscoutedHeadingProvider_Init(
+void WayPointProvider_Unscouted_Init(
     WayPointProvider_Unscouted_t *instance,
     GridMap_FirstQuadrant5cmCell3m2x3m2_t *visitedGrid,
     GridMap_FirstQuadrant5cmCell3m2x3m2_t *blockedGird);

@@ -79,7 +79,7 @@ static XYCoordinate_t GetWayPoint(
 static const WayPointProviderApi_t api =
     { GetWayPoint };
 
-void UnscoutedHeadingProvider_Init(
+void WayPointProvider_Unscouted_Init(
     WayPointProvider_Unscouted_t *instance,
     GridMap_FirstQuadrant5cmCell3m2x3m2_t *visitedGrid,
     GridMap_FirstQuadrant5cmCell3m2x3m2_t *blockedGird)
