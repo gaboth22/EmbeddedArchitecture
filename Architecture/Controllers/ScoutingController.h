@@ -7,6 +7,8 @@
 #include "I_WayPointProvider.h"
 #include "DistanceProviderCm.h"
 #include "Stack.h"
+#include "LcdDisplayController.h"
+#include "MapBuilder.h"
 
 typedef struct
 {
@@ -26,6 +28,8 @@ typedef struct
     uint8_t xpos;
     uint8_t ypos;
     uint8_t currentHeading;
+    LcdDisplayController_t *lcd;
+    MapBuilder_t *mapBuilder;
 } ScoutingController_t;
 
 /*
@@ -59,6 +63,8 @@ void ScoutingController_Init(
     I_WayPointProvider_t *unscoutedWaypointProvider,
     I_PathFinder_t *pathFinder,
     uint8_t startX,
-    uint8_t startY);
+    uint8_t startY,
+    LcdDisplayController_t *lcd,
+    MapBuilder_t *mapBuilder);
 
 #endif

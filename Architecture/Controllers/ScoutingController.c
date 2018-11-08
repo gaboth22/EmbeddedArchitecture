@@ -1,3 +1,4 @@
+#include <string.h>
 #include <math.h>
 #include "ScoutingController.h"
 
@@ -13,30 +14,42 @@ enum
     CompleteUTurn = 17,
 
     DistanceForOneCellCm = 5,
-    DistanceToCountAWallInThatDirectionCm = 10,
+    DistanceToCountAWallInThatDirectionCm = 30,
 
     CurrentHeading_N = 0,
     CurrentHeading_S = 1,
     CurrentHeading_W = 2,
     CurrentHeading_E = 3,
 
-    ForwardDistanceThresholdForTurnCm = 20,
-    DistanceToKickForwardMotion = 50,
+    ForwardDistanceThresholdForTurnCm = 28,
+    DistanceToKickForwardMotion = 150,
 
     TicksForATurn = 90,
 
     Left = 100,
-    Right = 101
+    Right = 101,
+
+    DistanceToMoveAfterDetectingAWallUpfrontCm = 6,
+    FrontDistanceToForceStopCm = 13
 };
+
+static void Uint8To2LengthString(uint8_t data, char *buffer)
+{
+    uint8_t byte1 = (data / 10);
+    uint8_t byte0 = (data % 10);
+
+    buffer[0] = (byte1 + '0');
+    buffer[1] = (byte0 + '0');
+}
 
 void ScoutingController_Start(ScoutingController_t *instance)
 {
     instance->start = true;
 }
 
-static void MarkFrontWallAsBlocked(ScoutingController_t *instance, DistanceInCm_t distanceToFrontWall)
+static void MarkFrontWallAsBlocked(ScoutingController_t *instance)
 {
-    uint8_t cellsToFrontWall = (uint8_t)ceil((float)distanceToFrontWall / DistanceForOneCellCm);
+    uint8_t cellsToFrontWall = 1;
 
     switch(instance->currentHeading)
     {
@@ -62,160 +75,11 @@ static void MarkFrontWallAsBlocked(ScoutingController_t *instance, DistanceInCm_
     }
 }
 
-static void PopulateGridsAndUpdatePosition(ScoutingController_t *instance, DistanceInCm_t distanceMoved)
-{
-    bool increaseX = false;
-    bool decreaseX = false;
-    bool increaseY = false;
-    bool decreaseY = false;
-
-    uint8_t numberOfGridCellsToOccupy = distanceMoved / DistanceForOneCellCm;
-
-    switch(instance->currentHeading)
-    {
-        case CurrentHeading_N:
-            increaseY = true;
-            break;
-
-        case CurrentHeading_S:
-            decreaseY = true;
-            break;
-
-        case CurrentHeading_W:
-            decreaseX = true;
-            break;
-
-        case CurrentHeading_E:
-            increaseX = true;
-            break;
-    }
-
-    uint8_t i = 0;
-
-    if(increaseX)
-    {
-        uint8_t newXPosEnd = instance->xpos + numberOfGridCellsToOccupy;
-        for(i = instance->xpos; i <= newXPosEnd; i++)
-        {
-            GridMap_FirstQuadrant5cmCell3m2x3m2_SetCellValueAtIndex(
-                &instance->visitedAreasGrid,
-                i,
-                instance->ypos);
-
-            if(DistanceSensor_GetDistanceInCm(instance->leftSensor) < DistanceToCountAWallInThatDirectionCm)
-            {
-                GridMap_FirstQuadrant5cmCell3m2x3m2_SetCellValueAtIndex(
-                    &instance->blockedAreasGrid,
-                    i,
-                    instance->ypos + 1);
-            }
-
-            if(DistanceSensor_GetDistanceInCm(instance->rightSensor) < DistanceToCountAWallInThatDirectionCm)
-           {
-                GridMap_FirstQuadrant5cmCell3m2x3m2_SetCellValueAtIndex(
-                    &instance->blockedAreasGrid,
-                    i,
-                    instance->ypos - 1);
-           }
-        }
-
-        instance->xpos += numberOfGridCellsToOccupy;
-    }
-
-    else if(decreaseX)
-    {
-        uint8_t newXPosEnd = instance->xpos - numberOfGridCellsToOccupy;
-        for(i = instance->xpos; i >= newXPosEnd; i--)
-        {
-            GridMap_FirstQuadrant5cmCell3m2x3m2_SetCellValueAtIndex(
-                &instance->visitedAreasGrid,
-                i,
-                instance->ypos);
-
-            if(DistanceSensor_GetDistanceInCm(instance->leftSensor) < DistanceToCountAWallInThatDirectionCm)
-            {
-                GridMap_FirstQuadrant5cmCell3m2x3m2_SetCellValueAtIndex(
-                    &instance->blockedAreasGrid,
-                    i,
-                    instance->ypos - 1);
-            }
-
-            if(DistanceSensor_GetDistanceInCm(instance->rightSensor) < DistanceToCountAWallInThatDirectionCm)
-           {
-                GridMap_FirstQuadrant5cmCell3m2x3m2_SetCellValueAtIndex(
-                    &instance->blockedAreasGrid,
-                    i,
-                    instance->ypos + 1);
-           }
-        }
-
-        instance->xpos -= numberOfGridCellsToOccupy;
-    }
-
-    else if(increaseY)
-    {
-        uint8_t newYPosEnd = instance->ypos + numberOfGridCellsToOccupy;
-        for(i = instance->ypos; i <= newYPosEnd; i++)
-        {
-            GridMap_FirstQuadrant5cmCell3m2x3m2_SetCellValueAtIndex(
-                &instance->visitedAreasGrid,
-                instance->xpos,
-                i);
-
-            if(DistanceSensor_GetDistanceInCm(instance->leftSensor) < DistanceToCountAWallInThatDirectionCm)
-            {
-                GridMap_FirstQuadrant5cmCell3m2x3m2_SetCellValueAtIndex(
-                    &instance->blockedAreasGrid,
-                    instance->xpos - 1,
-                    i);
-            }
-
-            if(DistanceSensor_GetDistanceInCm(instance->rightSensor) < DistanceToCountAWallInThatDirectionCm)
-           {
-               GridMap_FirstQuadrant5cmCell3m2x3m2_SetCellValueAtIndex(
-                   &instance->blockedAreasGrid,
-                   instance->xpos + 1,
-                   i);
-           }
-        }
-
-        instance->ypos += numberOfGridCellsToOccupy;
-    }
-
-    else if(decreaseY)
-    {
-        uint8_t newYPosEnd = instance->ypos - numberOfGridCellsToOccupy;
-        for(i = instance->ypos; i >= newYPosEnd; i--)
-        {
-            GridMap_FirstQuadrant5cmCell3m2x3m2_SetCellValueAtIndex(
-                &instance->visitedAreasGrid,
-                instance->xpos,
-                i);
-
-            if(DistanceSensor_GetDistanceInCm(instance->leftSensor) < DistanceToCountAWallInThatDirectionCm)
-            {
-                GridMap_FirstQuadrant5cmCell3m2x3m2_SetCellValueAtIndex(
-                    &instance->blockedAreasGrid,
-                    instance->xpos + 1,
-                    i);
-            }
-
-            if(DistanceSensor_GetDistanceInCm(instance->rightSensor) < DistanceToCountAWallInThatDirectionCm)
-           {
-               GridMap_FirstQuadrant5cmCell3m2x3m2_SetCellValueAtIndex(
-                   &instance->blockedAreasGrid,
-                   instance->xpos - 1,
-                   i);
-           }
-        }
-
-        instance->ypos -= numberOfGridCellsToOccupy;
-    }
-}
-
 static void TurnTowardsDirection(ScoutingController_t *instance, XYCoordinate_t heading)
 {
     DistanceProviderCm_DisableDistanceTracking(instance->distanceProvider);
+    MotorController_ClearState(instance->motorController);
+
     if(heading.x > instance->xpos)
     {
         switch(instance->currentHeading)
@@ -302,12 +166,26 @@ void ScoutingController_Run(ScoutingController_t *instance)
 {
     if(instance->start)
     {
+        XYCoordinate_t newPosition =
+            MapBuilder_Run(
+                instance->mapBuilder,
+                instance->currentHeading,
+                instance->xpos,
+                instance->ypos,
+                &instance->visitedAreasGrid,
+                &instance->blockedAreasGrid);
+
+        instance->xpos = newPosition.x;
+        instance->ypos = newPosition.y;
+
         switch(instance->state)
         {
             case StartForwardMotion:
                 {
+                    LcdDisplayController_SetCursorIndex(
+                        instance->lcd, 1, 0);
+
                     instance->state = MonitorForwardDistanceToStop;
-                    PopulateGridsAndUpdatePosition(instance, 0);
                     DistanceProviderCm_EnableDistanceTracking(instance->distanceProvider);
 
                     MotorController_Forward(
@@ -320,16 +198,6 @@ void ScoutingController_Run(ScoutingController_t *instance)
 
             case MonitorForwardDistanceToStop:
                 {
-                    DistanceInCm_t distanceMovedSoFar =
-                        DistanceProviderCm_GetDistance(instance->distanceProvider);
-
-                    if(distanceMovedSoFar > 0)
-                    {
-                        instance->runningDistance += distanceMovedSoFar;
-                        PopulateGridsAndUpdatePosition(instance, distanceMovedSoFar);
-                        DistanceProviderCm_ClearDistance(instance->distanceProvider);
-                    }
-
                     DistanceInCm_t forwardDistanceWithoutObstacle =
                         DistanceSensor_GetDistanceInCm(instance->frontSensor);
 
@@ -346,32 +214,21 @@ void ScoutingController_Run(ScoutingController_t *instance)
                         DistanceSensor_GetDistanceInCm(instance->frontSensor);
                     instance->state = WaitForFullStop;
 
-                    MarkFrontWallAsBlocked(instance, forwardDistanceWithoutObstacle);
-
                     MotorController_ClearState(instance->motorController);
 
                     MotorController_Forward(
                         instance->motorController,
                         DistanceProviderCm_GetTicksFromCm(
                             instance->distanceProvider,
-                            forwardDistanceWithoutObstacle - DistanceForOneCellCm));
+                            DistanceToMoveAfterDetectingAWallUpfrontCm));
                 }
                 break;
 
             case WaitForFullStop:
                 {
-                    DistanceInCm_t distanceMovedSoFar =
-                        DistanceProviderCm_GetDistance(instance->distanceProvider);
-
-                    if(distanceMovedSoFar > 0)
-                    {
-                        instance->runningDistance += distanceMovedSoFar;
-                        PopulateGridsAndUpdatePosition(instance, distanceMovedSoFar);
-                        DistanceProviderCm_ClearDistance(instance->distanceProvider);
-                    }
-
                     if(!MotorController_Busy(instance->motorController))
                     {
+                        MarkFrontWallAsBlocked(instance);
                         instance->state = GenerateHeadingTowardsUnscoutedNonBlockedCells;
                     }
                 }
@@ -389,14 +246,47 @@ void ScoutingController_Run(ScoutingController_t *instance)
                             currentPosition,
                             openSpot);
 
-                    if(Stack_Size(instance->path))
+                    char msg[16];
+
+                    char at[] = "(  ,  )";
+                    char buff[2];
+
+                    Uint8To2LengthString(instance->xpos, &buff[0]);
+
+                    at[1] = buff[0];
+                    at[2] = buff[1];
+
+                    Uint8To2LengthString(instance->ypos, &buff[0]);
+
+                    at[4] = buff[0];
+                    at[5] = buff[1];
+
+                    char open[] = "(  ,  )";
+
+                    Uint8To2LengthString(openSpot.x, &buff[0]);
+
+                    open[1] = buff[0];
+                    open[2] = buff[1];
+
+                    Uint8To2LengthString(openSpot.y, &buff[0]);
+
+                    open[4] = buff[0];
+                    open[5] = buff[1];
+
+                    strcpy(msg, at);
+                    strcat(msg, open);
+
+                    LcdDisplayController_WriteString(instance->lcd, msg, 14);
+
+                    if(Stack_Size(instance->path) == 1)
                     {
                         instance->state = JustTurnTowardsDirection;
                         TurnTowardsDirection(instance, openSpot);
                     }
                     else
                     {
-                        instance->state = FollowPath;
+                        instance->state = JustTurnTowardsDirection;
+                        TurnTowardsDirection(instance, openSpot);
                     }
                 }
                 break;
@@ -442,7 +332,9 @@ void ScoutingController_Init(
     I_WayPointProvider_t *unscoutedWaypointProvider,
     I_PathFinder_t *pathFinder,
     uint8_t startX,
-    uint8_t startY)
+    uint8_t startY,
+    LcdDisplayController_t *lcd,
+    MapBuilder_t *mapBuilder)
 {
    GridMap_FirstQuadrant5cmCell3m2x3m2_Init(&instance->visitedAreasGrid);
    GridMap_FirstQuadrant5cmCell3m2x3m2_Init(&instance->blockedAreasGrid);
@@ -459,4 +351,6 @@ void ScoutingController_Init(
    instance->runningDistance = 0;
    instance->xpos = startX;
    instance->ypos = startY;
+   instance->lcd = lcd;
+   instance->mapBuilder = mapBuilder;
 }

@@ -74,8 +74,12 @@ static void RightEncoderCallback(void *context, void *args)
 
 static void RunPidForward(MotorController_t *instance)
 {
-    int64_t leftMotorPidOutput = PidController_Run(instance->leftPid, instance->leftEncoderTick, instance->leftMotorDistanceToMove);
+    int64_t leftMotorPidOutput =
+        PidController_Run(instance->leftPid, instance->leftEncoderTick, instance->leftMotorDistanceToMove);
     leftMotorPidOutput = GetSmoothedOutPidOutput(instance, leftMotorPidOutput);
+
+    int64_t correction =
+        MotorDriveCorrectionController_GetCorrectionFactor(instance->correctionController);
 
     if(leftMotorPidOutput < 0)
     {
@@ -85,12 +89,19 @@ static void RunPidForward(MotorController_t *instance)
     }
     else
     {
+        if(correction < 0)
+        {
+            leftMotorPidOutput =
+                    TRUNCATE_U64_SUBSTRACTION(leftMotorPidOutput, (-1 * correction));
+        }
+
         Pwm_SetDutyCycle(instance->pwmLeftBwd, 0);
         Pwm_SetDutyCycle(instance->pwmLeftFwd, (uint8_t)leftMotorPidOutput);
         instance->leftMotorDirection = MotorDirection_Forward;
     }
 
-    int64_t rightMotorPidOutput = PidController_Run(instance->rightPid, instance->rightEncoderTick, instance->rightMotorDistanceToMove);
+    int64_t rightMotorPidOutput =
+        PidController_Run(instance->rightPid, instance->rightEncoderTick, instance->rightMotorDistanceToMove);
     rightMotorPidOutput = GetSmoothedOutPidOutput(instance, rightMotorPidOutput);
 
     if(rightMotorPidOutput < 0)
@@ -101,14 +112,14 @@ static void RunPidForward(MotorController_t *instance)
     }
     else
     {
+        if(correction > 0)
+        {
+            rightMotorPidOutput = TRUNCATE_U64_SUBSTRACTION(rightMotorPidOutput, correction);
+        }
+
         Pwm_SetDutyCycle(instance->pwmRightBwd, 0);
         Pwm_SetDutyCycle(instance->pwmRightFwd, (uint8_t)rightMotorPidOutput);
         instance->rightMotorDirection = MotorDirection_Forward;
-    }
-
-    if(leftMotorPidOutput == 0 && rightMotorPidOutput == 0)
-    {
-        instance->busy = false;
     }
 }
 
@@ -145,11 +156,6 @@ static void RunPidRight(MotorController_t *instance)
         Pwm_SetDutyCycle(instance->pwmRightBwd, (uint8_t)rightMotorPidOutput);
         instance->rightMotorDirection = MotorDirection_Forward; //moving forward to respect to other PWM
     }
-
-    if(leftMotorPidOutput == 0 && rightMotorPidOutput == 0)
-    {
-        instance->busy = false;
-    }
 }
 
 static void RunPidLeft(MotorController_t *instance)
@@ -184,11 +190,6 @@ static void RunPidLeft(MotorController_t *instance)
         Pwm_SetDutyCycle(instance->pwmRightBwd, 0);
         Pwm_SetDutyCycle(instance->pwmRightFwd, (uint8_t)rightMotorPidOutput);
         instance->rightMotorDirection = MotorDirection_Forward;
-    }
-
-    if(leftMotorPidOutput == 0 && rightMotorPidOutput == 0)
-    {
-        instance->busy = false;
     }
 }
 
@@ -268,7 +269,20 @@ static void Run(I_MotorController_t *_instance)
 static bool Busy(I_MotorController_t *_instance)
 {
     RECAST(instance, _instance, MotorController_t *);
-    return instance->busy;
+
+    if(instance->busy)
+    {
+        if(MotorControllerBusyChecker_Busy(instance->busyChecker))
+        {
+            instance->busy = false;
+        }
+
+        return true;
+    }
+    else
+    {
+        return MotorControllerBusyChecker_Busy(instance->busyChecker);
+    }
 }
 
 static void ClearState(I_MotorController_t *_instance)
@@ -292,10 +306,11 @@ void MotorController_Init(
     PidController_t *leftPid,
     PidController_t *rightPid,
     TimerModule_t *timerModule,
-    int64_t smoothnessFactor)
+    int64_t smoothnessFactor,
+    I_MotorControllerBusyChecker_t *busyChecker,
+    MotorDriveCorrectionController_t *correctionController)
 {
     instance->interface.api = &api;
-    instance->busy = false;
 
     instance->leftMotorDirection = MotorDirection_Forward;
     instance->rightMotorDirection = MotorDirection_Forward;
@@ -311,12 +326,18 @@ void MotorController_Init(
     instance->pwmRightFwd = pwmRightFwd;
     instance->pwmRightBwd = pwmRightBwd;
 
+    instance->busy = false;
+
     instance->leftPid = leftPid;
     instance->rightPid = rightPid;
 
     instance->doSmoothStartup = false;
     instance->smoothnessFactor = smoothnessFactor;
     instance->stopSmoothnessTimer = false;
+
+    instance->busyChecker = busyChecker;
+
+    instance->correctionController = correctionController;
 
     TimerPeriodic_Init(
         &instance->smoothStartupTimer,

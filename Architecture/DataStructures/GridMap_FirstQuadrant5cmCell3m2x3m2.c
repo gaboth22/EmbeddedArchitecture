@@ -67,13 +67,13 @@ void GridMap_FirstQuadrant5cmCell3m2x3m2_GetIndicesOfAdjacents(
     *(indices + 2) = ((x - 1) < 0) ? UINT8_MAX : (x - 1);
     *(indices + 3) = y;
 
-    /* S */
-    *(indices + 4) = x;
-    *(indices + 5) = ((y - 1) < 0) ? UINT8_MAX : (y - 1);
-
     /* E */
-    *(indices + 6) = ((x + 1) > 63) ? UINT8_MAX : (x + 1);
-    *(indices + 7) = y;
+    *(indices + 4) = ((x + 1) > 63) ? UINT8_MAX : (x + 1);
+    *(indices + 5) = y;
+
+    /* S */
+    *(indices + 6) = x;
+    *(indices + 7) = ((y - 1) < 0) ? UINT8_MAX : (y - 1);
 }
 
 void GridMap_FirstQuadrant5cmCell3m2x3m2_Init(GridMap_FirstQuadrant5cmCell3m2x3m2_t *instance)

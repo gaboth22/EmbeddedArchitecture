@@ -23,9 +23,9 @@ typedef struct
     I_PathFinder_t interface;
     CellWithInfo_t aStarGridInfo[MaxGridSize][MaxGridSize];
     GridMap_FirstQuadrant5cmCell3m2x3m2_t visited;
-    XYCoordinate_t nonVisitedDataBuffer[255];
+    XYCoordinate_t nonVisitedDataBuffer[100];
     Queue_t nonVisited;
-    XYCoordinate_t finalPathDataBuffer[255];
+    XYCoordinate_t finalPathDataBuffer[100];
     Stack_t finalPath;
 } PathFinder_AStar_t;
 

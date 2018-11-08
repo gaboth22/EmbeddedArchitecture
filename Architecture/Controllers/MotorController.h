@@ -5,6 +5,8 @@
 #include "EventSubscriber_Synchronous.h"
 #include "I_Event.h"
 #include "I_Pwm.h"
+#include "I_MotorControllerBusyChecker.h"
+#include "MotorDriveCorrectionController.h"
 #include "PidController.h"
 #include "types.h"
 #include "TimerPeriodic.h"
@@ -46,12 +48,14 @@ typedef struct
     MotorDirection_t rightMotorDirection;
     uint16_t leftMotorDistanceToMove;
     uint16_t rightMotorDistanceToMove;
-    bool busy;
     bool doSmoothStartup;
     bool stopSmoothnessTimer;
     int64_t smoothnessFactor;
     int64_t runningSmoothnessFactor;
     TimerPeriodic_t smoothStartupTimer;
+    I_MotorControllerBusyChecker_t *busyChecker;
+    MotorDriveCorrectionController_t *correctionController;
+    bool busy;
 } MotorController_t;
 
 /*
@@ -68,6 +72,8 @@ void MotorController_Init(
     PidController_t *leftPid,
     PidController_t *rightPid,
     TimerModule_t *timerModule,
-    int64_t smoothnessFactor);
+    int64_t smoothnessFactor,
+    I_MotorControllerBusyChecker_t *busyChecker,
+    MotorDriveCorrectionController_t *correctionController);
 
 #endif

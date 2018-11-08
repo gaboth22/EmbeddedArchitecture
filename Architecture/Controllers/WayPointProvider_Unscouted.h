@@ -11,7 +11,7 @@ typedef struct
     GridMap_FirstQuadrant5cmCell3m2x3m2_t *visitedGrid;
     GridMap_FirstQuadrant5cmCell3m2x3m2_t *blockedGird;
     Queue_t queue;
-    XYCoordinate_t queueBuffer[255];
+    XYCoordinate_t queueBuffer[100];
     uint8_t adjacents[8];
 } WayPointProvider_Unscouted_t;
 
