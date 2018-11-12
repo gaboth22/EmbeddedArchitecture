@@ -6,6 +6,8 @@
 #include "Event_Synchronous.h"
 #include "MotionCommnad.h"
 #include "I_Uart.h"
+#include "TimerPeriodic.h"
+#include "TimerOneShot.h"
 #include "types.h"
 
 typedef struct
@@ -22,6 +24,7 @@ typedef struct
     uint16_t leftTicks;
     uint16_t rightTicks;
     TimerPeriodic_t periodicMotionTimer;
+    TimerOneShot_t resetModuleTimer;
 } RemoteMotionController_t;
 
 /*

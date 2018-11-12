@@ -26,6 +26,8 @@ static void ReceiveUartByte(void *context, void *args)
 
 static void DoMotion(RemoteMotionController_t *instance)
 {
+    TimerOneShot_Stop(&instance->resetModuleTimer);
+    TimerOneShot_Start(&instance->resetModuleTimer);
     Event_Subscribe(Uart_GetOnByteReceivedEvent(instance->wifiUart), &instance->uartSub.interface);
     Uart_SendByte(instance->wifiUart, MotionMessageCommand);
 }
@@ -62,6 +64,15 @@ I_Event_t * RemoteMotionController_GetOnMotionAcknowledgedEvent(RemoteMotionCont
     return &instance->onMotionAcknowledged.interface;
 }
 
+static void ResetModule(void *context)
+{
+    RECAST(instance, context, RemoteMotionController_t *);
+    Event_Unsubscribe(Uart_GetOnByteReceivedEvent(instance->wifiUart), &instance->uartSub.interface);
+    TimerPeriodic_Command(&instance->periodicMotionTimer, TimerPeriodicCommand_Stop);
+    Uart_Release(instance->wifiUart);
+    instance->busy = false;
+}
+
 void RemoteMotionController_Init(
     RemoteMotionController_t *instance,
     MotorController_t *motorController,
@@ -80,15 +91,18 @@ void RemoteMotionController_Init(
     instance->fwdTicks = ticksToMoveWhenForward;
     instance->rightTicks = ticksToMoveWhenRight;
     instance->leftTicks = ticksToMoveWhenLeft;
+
+    TimerOneShot_Init(&instance->resetModuleTimer, timerModule, 500, ResetModule, instance);
+
     Event_Synchronous_Init(&instance->onMotionAcknowledged);
     EventSubscriber_Synchronous_Init(&instance->uartSub, ReceiveUartByte, instance);
 
     TimerPeriodic_Init(
-            &instance->periodicMotionTimer,
-            timerModule,
-            5,
-            CheckUartAcquire,
-            instance);
+        &instance->periodicMotionTimer,
+        timerModule,
+        5,
+        CheckUartAcquire,
+        instance);
 }
 
 void RemoteMotionController_Run(RemoteMotionController_t *instance)
@@ -96,7 +110,6 @@ void RemoteMotionController_Run(RemoteMotionController_t *instance)
      if(instance->ackCount >= 2 && instance->newCommand)
     {
         Event_Unsubscribe(Uart_GetOnByteReceivedEvent(instance->wifiUart), &instance->uartSub.interface);
-        Uart_Release(instance->wifiUart);
         instance->busy = false;
         instance->newCommand = false;
         instance->ackCount = 0;
@@ -127,13 +140,14 @@ void RemoteMotionController_Run(RemoteMotionController_t *instance)
 
         instance->currentCommand = MotionCommand_Uninitialized;
         Event_Publish(&instance->onMotionAcknowledged.interface, NULL);
+        Uart_Release(instance->wifiUart);
     }
     else if(instance->ackCount >= 2)
     {
         instance->ackCount = 0;
         Event_Unsubscribe(Uart_GetOnByteReceivedEvent(instance->wifiUart), &instance->uartSub.interface);
-        Uart_Release(instance->wifiUart);
         instance->busy = false;
         Event_Publish(&instance->onMotionAcknowledged.interface, NULL);
+        Uart_Release(instance->wifiUart);
     }
 }

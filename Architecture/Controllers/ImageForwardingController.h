@@ -9,6 +9,7 @@
 #include "types.h"
 #include "TimerModule.h"
 #include "TimerPeriodic.h"
+#include "TimerOneShot.h"
 
 typedef struct
 {
@@ -25,6 +26,7 @@ typedef struct
     bool receivedAck;
     bool dmaTxDone;
     TimerPeriodic_t periodicForwardImageTimer;
+    TimerOneShot_t timerToResetModule;
     bool busy;
     CameraImage_t *image;
 } ImageForwardingController_t;
@@ -46,11 +48,6 @@ void ImageForwardingController_Init(
         uint32_t imageTrxDmaChannel,
         void *outputUartTxBufferAddress,
         TimerModule_t *timerModule);
-
-/*
- * Clear camera and DMA state if comm hangs
- */
-void ImageForwardingController_ClearState(ImageForwardingController_t *instance);
 
 /*
  * Forward one image

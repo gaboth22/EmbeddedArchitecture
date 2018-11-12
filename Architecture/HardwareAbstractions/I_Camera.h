@@ -22,7 +22,7 @@ struct _CameraApi_t
 	/*
 	 * Start an image capture
 	 */
-	void (*StartImageCapture)(I_Camera_t *instance);
+	bool (*StartImageCapture)(I_Camera_t *instance);
 
 	/*
 	 * Get event that publishes when image capture finishes

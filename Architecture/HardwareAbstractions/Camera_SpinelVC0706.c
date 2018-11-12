@@ -12,6 +12,7 @@ enum
     GeneralCommandSize = 5,
     GeneralAckSize = 5,
     GetImageLengthAckSize = 9,
+    SetCompressionRatioCommandSize = 9,
     ImageLengthHighByteIndex = 12,
     ImageLengthLowByteIndex = 13,
     GetImageDataCommandSize = 16,
@@ -36,6 +37,9 @@ enum
 static const uint8_t SetResolutionTo160x120CommandBytes[] =
     { 0x56, 0x00, 0x54, 0x01, 0x22 };
 
+static const uint8_t SetCompressionRatioCommandBytes[] =
+    { 0x56, 0x00, 0x31, 0x05, 0x01, 0x01, 0x12, 0x04, 0x63 };
+
 static const uint8_t GetImageCommandBytes[] =
     { 0x56, 0x00, 0x36, 0x01, 0x00 };
 
@@ -57,22 +61,24 @@ static const uint8_t StopImageCaptureAckBytes[] =
 static uint8_t ReadImageDataCommandBytes[] =
     { 0x56, 0x00, 0x32, 0x0C, 0x00, 0x0A, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0A };
 
-static void StartImageCapture(I_Camera_t *instance)
+static bool StartImageCapture(I_Camera_t *instance)
 {
     RECAST(cam, instance, Camera_SpinelVC0706_t *);
+    bool started = false;
 
     if(!cam->busy)
     {
+        started = true;
         cam->busy = true;
         cam->bufferIndex = 0;
         Event_Subscribe(Uart_GetOnByteReceivedEvent(cam->uart), &cam->uartSub.interface);
         Uart_EnableRx(cam->uart);
+        TimerOneShot_Stop(&cam->resetModuleTimer);
+        TimerOneShot_Start(&cam->resetModuleTimer);
         cam->state = CameraState_IssueGetImageRequest;
     }
-    else
-    {
-        Event_Publish(&cam->onImageCaptureDone.interface, &cam->image);
-    }
+
+    return started;
 }
 
 static I_Event_t * GetOnImageCaptureDoneEvent(I_Camera_t *instance)
@@ -109,6 +115,25 @@ static void MarkCamAsNotBusy(void *context)
     cam->busy = false;
 }
 
+static void SetCompressionRation(void *context)
+{
+    RECAST(cam, context, Camera_SpinelVC0706_t *);
+
+    uint8_t i = 0;
+    for(i = 0; i < SetCompressionRatioCommandSize; i++)
+    {
+        Uart_SendByte(cam->uart, SetCompressionRatioCommandBytes[i]);
+    }
+
+    TimerOneShot_Init(
+        &cam->waitForCameraTimer,
+        cam->timerModule,
+        300,
+        MarkCamAsNotBusy,
+        cam);
+    TimerOneShot_Start(&cam->waitForCameraTimer);
+}
+
 static void SetResolution(void *context)
 {
     RECAST(cam, context, Camera_SpinelVC0706_t *);
@@ -122,16 +147,17 @@ static void SetResolution(void *context)
     TimerOneShot_Init(
         &cam->waitForCameraTimer,
         cam->timerModule,
-        200,
-        MarkCamAsNotBusy,
+        300,
+        SetCompressionRation,
         cam);
     TimerOneShot_Start(&cam->waitForCameraTimer);
 }
 
-static void RestartCameraCaptureCycleAfterClearingState(void *context)
+static void FlagCameraAsNotBusyAnymore(void *context)
 {
     RECAST(instance, context, Camera_SpinelVC0706_t *);
-    instance->state = CameraState_IssueGetImageRequest;
+    instance->state = CameraState_Uninitialized;
+    instance->busy = false;
 }
 
 static void IssueStopCommand(Camera_SpinelVC0706_t *instance)
@@ -147,7 +173,7 @@ static void IssueStopCommand(Camera_SpinelVC0706_t *instance)
         &instance->waitForCameraTimer,
         instance->timerModule,
         1000,
-        RestartCameraCaptureCycleAfterClearingState,
+        FlagCameraAsNotBusyAnymore,
         instance);
     TimerOneShot_Start(&instance->waitForCameraTimer);
 }
@@ -160,50 +186,6 @@ static void ClearState(I_Camera_t *_instance)
     instance->busy = true;
     instance->state = CameraState_Uninitialized;
     IssueStopCommand(instance);
-}
-
-static void DebugTimerOneShot(void *context)
-{
-    IGNORE(context);
-    __no_operation();
-}
-
-static const CameraApi_t api =
-    { StartImageCapture, GetOnImageCaptureDoneEvent, ClearState };
-
-void Camera_SpinelVC076_Init(
-    Camera_SpinelVC0706_t *instance,
-    I_Uart_t *uart,
-    I_DmaController_t *dmaController,
-    uint32_t dmaChannel,
-    TimerModule_t *timerModule,
-    void *addressOfUartRxBuffer,
-    void *imageBuffer)
-{
-    instance->busy = true;
-    instance->uart = uart;
-    instance->timerModule = timerModule;
-    instance->interface.api = &api;
-    instance->bufferIndex = 0;
-    instance->currentImageLengthHighByte = 0;
-    instance->currentImageLengthLowByte = 0;
-    instance->dmaController = dmaController;
-    instance->imageBuffer = imageBuffer;
-    instance->addressOfUartRxBuffer = addressOfUartRxBuffer;
-    instance->dmaChannel = dmaChannel;
-    instance->state = CameraState_Uninitialized;
-
-    EventSubscriber_Synchronous_Init(&instance->uartSub, ReceiveByte, instance);
-
-    EventSubscriber_Synchronous_Init(&instance->dmaSub, DmaRxDoneCallback, instance);
-    Event_Subscribe(
-        DmaController_GetOnChannelTransferDoneEvent(instance->dmaController, instance->dmaChannel),
-        &instance->dmaSub.interface);
-
-    Event_Synchronous_Init(&instance->onImageCaptureDone);
-
-    TimerOneShot_Init(&instance->waitForCameraTimer, timerModule, WaitForCameraInitMs, SetResolution, instance);
-    TimerOneShot_Start(&instance->waitForCameraTimer);
 }
 
 void Camera_SpinelVC076_Run(Camera_SpinelVC0706_t *instance)
@@ -360,7 +342,57 @@ void Camera_SpinelVC076_Run(Camera_SpinelVC0706_t *instance)
         instance->image.imageSize = GetConcatenatedImageLength(
             instance->currentImageLengthHighByte,
             instance->currentImageLengthLowByte) + ExtraBytesForCameraAck;
-        instance->busy = false;
+        TimerOneShot_Stop(&instance->resetModuleTimer);
         Event_Publish(&instance->onImageCaptureDone.interface, &instance->image);
+        instance->busy = false;
     }
 }
+
+static void ResetModule(void *context)
+{
+    RECAST(instance, context, Camera_SpinelVC0706_t *);
+    IssueStopCommand(instance);
+}
+
+static const CameraApi_t api =
+    { StartImageCapture, GetOnImageCaptureDoneEvent, ClearState };
+
+void Camera_SpinelVC076_Init(
+    Camera_SpinelVC0706_t *instance,
+    I_Uart_t *uart,
+    I_DmaController_t *dmaController,
+    uint32_t dmaChannel,
+    TimerModule_t *timerModule,
+    void *addressOfUartRxBuffer,
+    void *imageBuffer,
+    CameraType_t cameraType)
+{
+    instance->busy = true;
+    instance->uart = uart;
+    instance->timerModule = timerModule;
+    instance->interface.api = &api;
+    instance->bufferIndex = 0;
+    instance->currentImageLengthHighByte = 0;
+    instance->currentImageLengthLowByte = 0;
+    instance->dmaController = dmaController;
+    instance->imageBuffer = imageBuffer;
+    instance->addressOfUartRxBuffer = addressOfUartRxBuffer;
+    instance->dmaChannel = dmaChannel;
+    instance->state = CameraState_Uninitialized;
+    instance->cameraType = cameraType;
+
+    TimerOneShot_Init(&instance->resetModuleTimer, timerModule, 1000, ResetModule, instance);
+
+    EventSubscriber_Synchronous_Init(&instance->uartSub, ReceiveByte, instance);
+
+    EventSubscriber_Synchronous_Init(&instance->dmaSub, DmaRxDoneCallback, instance);
+    Event_Subscribe(
+        DmaController_GetOnChannelTransferDoneEvent(instance->dmaController, instance->dmaChannel),
+        &instance->dmaSub.interface);
+
+    Event_Synchronous_Init(&instance->onImageCaptureDone);
+
+    TimerOneShot_Init(&instance->waitForCameraTimer, timerModule, WaitForCameraInitMs, SetResolution, instance);
+    TimerOneShot_Start(&instance->waitForCameraTimer);
+}
+

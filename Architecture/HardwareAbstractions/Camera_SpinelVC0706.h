@@ -15,8 +15,14 @@ typedef uint8_t CameraState_t;
 
 enum
 {
-    MaxBufferSize = 10
+    MaxBufferSize = 10,
 };
+
+typedef enum
+{
+    CameraType_0MP3 = 0,
+    CameraType_5MP
+} CameraType_t;
 
 typedef struct
 {
@@ -39,6 +45,8 @@ typedef struct
     CameraImage_t image;
     bool busy;
     bool dmaRxDone;
+    CameraType_t cameraType;
+    TimerOneShot_t resetModuleTimer;
 } Camera_SpinelVC0706_t;
 
 /*
@@ -54,6 +62,7 @@ void Camera_SpinelVC076_Run(Camera_SpinelVC0706_t *instance);
  * @param dmaController the DMA controller
  * @param timerModule the timer module
  * @param imageBuffer address to put received image at
+ * @param camera type being used
  */
 void Camera_SpinelVC076_Init(
     Camera_SpinelVC0706_t *instance,
@@ -62,6 +71,7 @@ void Camera_SpinelVC076_Init(
     uint32_t dmaChannel,
     TimerModule_t *timerModule,
     void *addressOfUartRxBuffer,
-    void *imageBuffer);
+    void *imageBuffer,
+    CameraType_t cameraType);
 
 #endif

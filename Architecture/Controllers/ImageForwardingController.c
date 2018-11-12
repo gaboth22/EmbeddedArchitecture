@@ -42,13 +42,14 @@ void ImageForwardingController_Run(ImageForwardingController_t *instance)
         Event_Unsubscribe(
             Uart_GetOnByteReceivedEvent(instance->wifiChipUart),
             &instance->uartByteReceivedSub.interface);
-        Uart_Release(instance->wifiChipUart);
         instance->busy = false;
+        TimerOneShot_Stop(&instance->timerToResetModule);
         Event_Publish(&instance->onImgFwdDoneEvent.interface, NULL);
+        Uart_Release(instance->wifiChipUart);
     }
 }
 
-static void ForwardImageReady(ImageForwardingController_t *instance, CameraImage_t *image)
+static void ActuallyForwardImage(ImageForwardingController_t *instance, CameraImage_t *image)
 {
     Event_Subscribe(
         Uart_GetOnByteReceivedEvent(instance->wifiChipUart),
@@ -61,7 +62,7 @@ static void ForwardImageReady(ImageForwardingController_t *instance, CameraImage
     Uart_SendByte(instance->wifiChipUart, imgSizeLowByte);
 
     instance->dmaTxDone = false;
-    instance->receivedAck = true;
+    instance->receivedAck = false;
 
     DmaController_SetChannelSourceTrigger(
             instance->dmaController,
@@ -87,7 +88,7 @@ static void CheckUartAcquire(void *context)
     if(Uart_Acquire(instance->wifiChipUart))
     {
         TimerPeriodic_Command(&instance->periodicForwardImageTimer, TimerPeriodicCommand_Stop);
-        ForwardImageReady(instance, instance->image);
+        ActuallyForwardImage(instance, instance->image);
     }
 }
 
@@ -100,7 +101,7 @@ static void ForwardImageToUart(void *context, void *args)
 
     if(Uart_Acquire(instance->wifiChipUart))
     {
-        ForwardImageReady(instance, instance->image);
+        ActuallyForwardImage(instance, instance->image);
     }
     else
     {
@@ -112,15 +113,19 @@ void ImageForwardingController_ForwardOneImage(ImageForwardingController_t *inst
 {
     if(!instance->busy)
     {
-        instance->busy = true;
-        Camera_StartImageCapture(instance->camera);
+        if(Camera_StartImageCapture(instance->camera))
+        {
+            instance->busy = true;
+            TimerOneShot_Start(&instance->timerToResetModule);
+        }
     }
 }
 
-void ImageForwardingController_ClearState(ImageForwardingController_t *instance)
+static void ResetModule(void *context)
 {
-    Camera_ClearState(instance->camera);
-    DmaController_ClearState(instance->dmaController);
+    RECAST(instance, context, ImageForwardingController_t *);
+    TimerPeriodic_Command(&instance->periodicForwardImageTimer, TimerPeriodicCommand_Stop);
+    instance->busy = false;
 }
 
 void ImageForwardingController_Init(
@@ -150,6 +155,13 @@ void ImageForwardingController_Init(
         timerModule,
         5,
         CheckUartAcquire,
+        instance);
+
+    TimerOneShot_Init(
+        &instance->timerToResetModule,
+        timerModule,
+        1000,
+        ResetModule,
         instance);
 
     EventSubscriber_Synchronous_Init(

@@ -32,6 +32,7 @@ void LinkedList_Remove(LinkedList_t *list, LinkedListNode_t *toRemove)
     if(list->head != NULL && toRemove == list->head)
     {
         list->head = list->head->next;
+        toRemove->next = NULL;
         return;
     }
 
@@ -42,6 +43,7 @@ void LinkedList_Remove(LinkedList_t *list, LinkedListNode_t *toRemove)
         if(temp->next != NULL && temp->next == toRemove)
         {
             temp->next = toRemove->next;
+            toRemove->next = NULL;
             break;
         }
         temp = temp->next;

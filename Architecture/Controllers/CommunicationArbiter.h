@@ -23,6 +23,7 @@ typedef struct
     TimerOneShot_t checkStateTimer;
     TimerOneShot_t delayCaptureTimer;
     TimerModule_t *timerModule;
+    uint8_t runningState;
 } CommunicationArbiter_t;
 
 /*
