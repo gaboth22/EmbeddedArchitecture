@@ -1,5 +1,4 @@
 #include "MotorController.h"
-#include "GpioTable.h"
 #include "Utils.h"
 
 enum
@@ -73,10 +72,14 @@ static void RightEncoderCallback(void *context, void *args)
     }
 }
 
-static void MotorController_RunPidForward(MotorController_t *instance)
+static void RunPidForward(MotorController_t *instance)
 {
-    int64_t leftMotorPidOutput = PidController_Run(instance->leftPid, instance->leftEncoderTick, instance->leftMotorDistanceToMove);
+    int64_t leftMotorPidOutput =
+        PidController_Run(instance->leftPid, instance->leftEncoderTick, instance->leftMotorDistanceToMove);
     leftMotorPidOutput = GetSmoothedOutPidOutput(instance, leftMotorPidOutput);
+
+    int64_t correction =
+        MotorDriveCorrectionController_GetCorrectionFactor(instance->correctionController);
 
     if(leftMotorPidOutput < 0)
     {
@@ -86,12 +89,19 @@ static void MotorController_RunPidForward(MotorController_t *instance)
     }
     else
     {
+        if(correction < 0)
+        {
+            leftMotorPidOutput =
+                    TRUNCATE_U64_SUBSTRACTION(leftMotorPidOutput, (-1 * correction));
+        }
+
         Pwm_SetDutyCycle(instance->pwmLeftBwd, 0);
         Pwm_SetDutyCycle(instance->pwmLeftFwd, (uint8_t)leftMotorPidOutput);
         instance->leftMotorDirection = MotorDirection_Forward;
     }
 
-    int64_t rightMotorPidOutput = PidController_Run(instance->rightPid, instance->rightEncoderTick, instance->rightMotorDistanceToMove);
+    int64_t rightMotorPidOutput =
+        PidController_Run(instance->rightPid, instance->rightEncoderTick, instance->rightMotorDistanceToMove);
     rightMotorPidOutput = GetSmoothedOutPidOutput(instance, rightMotorPidOutput);
 
     if(rightMotorPidOutput < 0)
@@ -102,18 +112,18 @@ static void MotorController_RunPidForward(MotorController_t *instance)
     }
     else
     {
+        if(correction > 0)
+        {
+            rightMotorPidOutput = TRUNCATE_U64_SUBSTRACTION(rightMotorPidOutput, correction);
+        }
+
         Pwm_SetDutyCycle(instance->pwmRightBwd, 0);
         Pwm_SetDutyCycle(instance->pwmRightFwd, (uint8_t)rightMotorPidOutput);
         instance->rightMotorDirection = MotorDirection_Forward;
     }
-
-    if(leftMotorPidOutput == 0 && rightMotorPidOutput == 0)
-    {
-        instance->busy = false;
-    }
 }
 
-static void MotorController_RunPidRight(MotorController_t *instance)
+static void RunPidRight(MotorController_t *instance)
 {
     int64_t leftMotorPidOutput = PidController_Run(instance->leftPid, instance->leftEncoderTick, instance->leftMotorDistanceToMove);
     leftMotorPidOutput = GetSmoothedOutPidOutput(instance, leftMotorPidOutput);
@@ -146,14 +156,9 @@ static void MotorController_RunPidRight(MotorController_t *instance)
         Pwm_SetDutyCycle(instance->pwmRightBwd, (uint8_t)rightMotorPidOutput);
         instance->rightMotorDirection = MotorDirection_Forward; //moving forward to respect to other PWM
     }
-
-    if(leftMotorPidOutput == 0 && rightMotorPidOutput == 0)
-    {
-        instance->busy = false;
-    }
 }
 
-static void MotorController_RunPidLeft(MotorController_t *instance)
+static void RunPidLeft(MotorController_t *instance)
 {
     int64_t leftMotorPidOutput = PidController_Run(instance->leftPid, instance->leftEncoderTick, instance->leftMotorDistanceToMove);
     leftMotorPidOutput = GetSmoothedOutPidOutput(instance, leftMotorPidOutput);
@@ -186,14 +191,9 @@ static void MotorController_RunPidLeft(MotorController_t *instance)
         Pwm_SetDutyCycle(instance->pwmRightFwd, (uint8_t)rightMotorPidOutput);
         instance->rightMotorDirection = MotorDirection_Forward;
     }
-
-    if(leftMotorPidOutput == 0 && rightMotorPidOutput == 0)
-    {
-        instance->busy = false;
-    }
 }
 
-static void MotorController_SetupDirection(MotorController_t *instance, uint16_t distanceToMoveL, uint16_t distanceToMoveR)
+static void SetupDirection(MotorController_t *instance, uint16_t distanceToMoveL, uint16_t distanceToMoveR)
 {
     instance->leftEncoderTick = 0;
     instance->rightEncoderTick = 0;
@@ -201,44 +201,49 @@ static void MotorController_SetupDirection(MotorController_t *instance, uint16_t
     instance->rightMotorDistanceToMove = distanceToMoveR;
 }
 
-void MotorController_Forward(MotorController_t *instance, uint16_t distanceToMove)
+static void Forward(I_MotorController_t *_instance, uint16_t distanceToMove)
 {
+    RECAST(instance, _instance, MotorController_t *);
     instance->busy = true;
     instance->doSmoothStartup = true;
     instance->stopSmoothnessTimer = false;
     instance->runningSmoothnessFactor = instance->smoothnessFactor;
-    MotorController_SetupDirection(instance, distanceToMove, distanceToMove - 3);
+    SetupDirection(instance, distanceToMove, distanceToMove - 3);
     instance->controllerDirection = ControllerDirection_Forward;
 
     TimerPeriodic_Start(&instance->smoothStartupTimer);
 }
 
-void MotorController_TurnRight(MotorController_t *instance, uint16_t distanceToMove)
+static void TurnRight(I_MotorController_t *_instance, uint16_t distanceToMove)
 {
+    RECAST(instance, _instance, MotorController_t *);
     instance->busy = true;
     instance->doSmoothStartup = true;
     instance->stopSmoothnessTimer = false;
     instance->runningSmoothnessFactor = instance->smoothnessFactor;
-    MotorController_SetupDirection(instance, distanceToMove, distanceToMove - 15);
+    SetupDirection(instance, distanceToMove, distanceToMove - 15);
     instance->controllerDirection = ControllerDirection_Right;
 
     TimerPeriodic_Start(&instance->smoothStartupTimer);
 }
 
-void MotorController_TurnLeft(MotorController_t *instance, uint16_t distanceToMove)
+static void TurnLeft(I_MotorController_t *_instance, uint16_t distanceToMove)
 {
+    RECAST(instance, _instance, MotorController_t *);
     instance->busy = true;
     instance->doSmoothStartup = true;
     instance->stopSmoothnessTimer = false;
     instance->runningSmoothnessFactor = instance->smoothnessFactor;
-    MotorController_SetupDirection(instance, distanceToMove, distanceToMove - 15);
+    SetupDirection(instance, distanceToMove, distanceToMove - 15);
     instance->controllerDirection = ControllerDirection_Left;
 
     TimerPeriodic_Start(&instance->smoothStartupTimer);
 }
 
-void MotorController_Run(MotorController_t *instance)
+static void Run(I_MotorController_t *_instance)
 {
+    RECAST(instance, _instance, MotorController_t *);
+
     if(instance->stopSmoothnessTimer)
     {
         instance->doSmoothStartup = false;
@@ -248,23 +253,47 @@ void MotorController_Run(MotorController_t *instance)
     switch(instance->controllerDirection)
     {
         case ControllerDirection_Forward:
-            MotorController_RunPidForward(instance);
+            RunPidForward(instance);
             break;
         case ControllerDirection_Right:
-            MotorController_RunPidRight(instance);
+            RunPidRight(instance);
             break;
         case ControllerDirection_Left:
-            MotorController_RunPidLeft(instance);
+            RunPidLeft(instance);
             break;
         default:
             break;
     }
 }
 
-bool MotorController_Busy(MotorController_t *instance)
+static bool Busy(I_MotorController_t *_instance)
 {
-    return instance->busy;
+    RECAST(instance, _instance, MotorController_t *);
+
+    if(instance->busy)
+    {
+        if(MotorControllerBusyChecker_Busy(instance->busyChecker))
+        {
+            instance->busy = false;
+        }
+
+        return true;
+    }
+    else
+    {
+        return MotorControllerBusyChecker_Busy(instance->busyChecker);
+    }
 }
+
+static void ClearState(I_MotorController_t *_instance)
+{
+    RECAST(instance, _instance, MotorController_t *);
+    PidController_ClearState(instance->leftPid);
+    PidController_ClearState(instance->rightPid);
+}
+
+static const MotorControllerApi_t api =
+    { Run, Forward, TurnRight, TurnLeft, Busy, ClearState };
 
 void MotorController_Init(
     MotorController_t *instance,
@@ -277,9 +306,11 @@ void MotorController_Init(
     PidController_t *leftPid,
     PidController_t *rightPid,
     TimerModule_t *timerModule,
-    int64_t smoothnessFactor)
+    int64_t smoothnessFactor,
+    I_MotorControllerBusyChecker_t *busyChecker,
+    MotorDriveCorrectionController_t *correctionController)
 {
-    instance->busy = false;
+    instance->interface.api = &api;
 
     instance->leftMotorDirection = MotorDirection_Forward;
     instance->rightMotorDirection = MotorDirection_Forward;
@@ -295,12 +326,18 @@ void MotorController_Init(
     instance->pwmRightFwd = pwmRightFwd;
     instance->pwmRightBwd = pwmRightBwd;
 
+    instance->busy = false;
+
     instance->leftPid = leftPid;
     instance->rightPid = rightPid;
 
     instance->doSmoothStartup = false;
     instance->smoothnessFactor = smoothnessFactor;
     instance->stopSmoothnessTimer = false;
+
+    instance->busyChecker = busyChecker;
+
+    instance->correctionController = correctionController;
 
     TimerPeriodic_Init(
         &instance->smoothStartupTimer,
