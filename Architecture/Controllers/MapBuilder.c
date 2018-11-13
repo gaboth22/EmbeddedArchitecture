@@ -8,7 +8,7 @@ enum
     CurrentHeading_E = 3,
     DistanceForOneCellCm = 5,
 
-    DistanceToCountAWallInThatDirectionCm = 30
+    DistanceToCountAWallInThatDirectionCm = 35
 };
 
 static XYCoordinate_t PopulateGridsAndUpdatePosition(
@@ -58,21 +58,21 @@ static XYCoordinate_t PopulateGridsAndUpdatePosition(
                 i,
                 ypos);
 
-            if(DistanceSensor_GetDistanceInCm(instance->leftSensor) < DistanceToCountAWallInThatDirectionCm)
-            {
+//            if(DistanceSensor_GetDistanceInCm(instance->leftSensor) < DistanceToCountAWallInThatDirectionCm)
+//            {
                 GridMap_FirstQuadrant5cmCell3m2x3m2_SetCellValueAtIndex(
                     blockedAreasGrid,
                     i,
                     ypos + 1);
-            }
+//            }
 
-            if(DistanceSensor_GetDistanceInCm(instance->rightSensor) < DistanceToCountAWallInThatDirectionCm)
-           {
+//            if(DistanceSensor_GetDistanceInCm(instance->rightSensor) < DistanceToCountAWallInThatDirectionCm)
+//           {
                 GridMap_FirstQuadrant5cmCell3m2x3m2_SetCellValueAtIndex(
                     blockedAreasGrid,
                     i,
                     ypos - 1);
-           }
+//           }
         }
 
         xpos += numberOfGridCellsToOccupy;
@@ -88,21 +88,21 @@ static XYCoordinate_t PopulateGridsAndUpdatePosition(
                 i,
                 ypos);
 
-            if(DistanceSensor_GetDistanceInCm(instance->leftSensor) < DistanceToCountAWallInThatDirectionCm)
-            {
+//            if(DistanceSensor_GetDistanceInCm(instance->leftSensor) < DistanceToCountAWallInThatDirectionCm)
+//            {
                 GridMap_FirstQuadrant5cmCell3m2x3m2_SetCellValueAtIndex(
                     blockedAreasGrid,
                     i,
                     ypos - 1);
-            }
+//            }
 
-            if(DistanceSensor_GetDistanceInCm(instance->rightSensor) < DistanceToCountAWallInThatDirectionCm)
-           {
+//            if(DistanceSensor_GetDistanceInCm(instance->rightSensor) < DistanceToCountAWallInThatDirectionCm)
+//           {
                 GridMap_FirstQuadrant5cmCell3m2x3m2_SetCellValueAtIndex(
                     blockedAreasGrid,
                     i,
                     ypos + 1);
-           }
+//           }
         }
 
         xpos -= numberOfGridCellsToOccupy;
@@ -118,21 +118,21 @@ static XYCoordinate_t PopulateGridsAndUpdatePosition(
                 xpos,
                 i);
 
-            if(DistanceSensor_GetDistanceInCm(instance->leftSensor) < DistanceToCountAWallInThatDirectionCm)
-            {
+//            if(DistanceSensor_GetDistanceInCm(instance->leftSensor) < DistanceToCountAWallInThatDirectionCm)
+//            {
                 GridMap_FirstQuadrant5cmCell3m2x3m2_SetCellValueAtIndex(
                     blockedAreasGrid,
                     xpos - 1,
                     i);
-            }
+//            }
 
-            if(DistanceSensor_GetDistanceInCm(instance->rightSensor) < DistanceToCountAWallInThatDirectionCm)
-           {
+//            if(DistanceSensor_GetDistanceInCm(instance->rightSensor) < DistanceToCountAWallInThatDirectionCm)
+//           {
                GridMap_FirstQuadrant5cmCell3m2x3m2_SetCellValueAtIndex(
                    blockedAreasGrid,
                    xpos + 1,
                    i);
-           }
+//           }
         }
 
         ypos += numberOfGridCellsToOccupy;
@@ -148,21 +148,21 @@ static XYCoordinate_t PopulateGridsAndUpdatePosition(
                 xpos,
                 i);
 
-            if(DistanceSensor_GetDistanceInCm(instance->leftSensor) < DistanceToCountAWallInThatDirectionCm)
-            {
+//            if(DistanceSensor_GetDistanceInCm(instance->leftSensor) < DistanceToCountAWallInThatDirectionCm)
+//            {
                 GridMap_FirstQuadrant5cmCell3m2x3m2_SetCellValueAtIndex(
                     blockedAreasGrid,
                     xpos + 1,
                     i);
-            }
+//            }
 
-            if(DistanceSensor_GetDistanceInCm(instance->rightSensor) < DistanceToCountAWallInThatDirectionCm)
-           {
+//            if(DistanceSensor_GetDistanceInCm(instance->rightSensor) < DistanceToCountAWallInThatDirectionCm)
+//           {
                GridMap_FirstQuadrant5cmCell3m2x3m2_SetCellValueAtIndex(
                    blockedAreasGrid,
                    xpos - 1,
                    i);
-           }
+//           }
         }
 
         ypos -= numberOfGridCellsToOccupy;

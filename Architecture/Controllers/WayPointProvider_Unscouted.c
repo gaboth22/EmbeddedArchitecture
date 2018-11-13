@@ -25,6 +25,11 @@ static void PushIndicesOfNonBlockedAdjacents(
 
     for(i = 1; i < 8; i += 2)
     {
+        if(instance->adjacents[i-1] > 63 || instance->adjacents[i] > 63)
+        {
+            continue;
+        }
+
         if(NonBlockedCell ==
            GridMap_FirstQuadrant5cmCell3m2x3m2_GetCellValueAtIndex(
                    instance->blockedGird,

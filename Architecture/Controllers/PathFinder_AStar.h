@@ -8,7 +8,8 @@
 
 enum
 {
-    MaxGridSize = 64
+    MaxGridSize = 64,
+    MaxBuffSize = 250
 };
 
 typedef struct
@@ -23,9 +24,9 @@ typedef struct
     I_PathFinder_t interface;
     CellWithInfo_t aStarGridInfo[MaxGridSize][MaxGridSize];
     GridMap_FirstQuadrant5cmCell3m2x3m2_t visited;
-    XYCoordinate_t nonVisitedDataBuffer[100];
+    XYCoordinate_t nonVisitedDataBuffer[MaxBuffSize];
     Queue_t nonVisited;
-    XYCoordinate_t finalPathDataBuffer[100];
+    XYCoordinate_t finalPathDataBuffer[MaxBuffSize];
     Stack_t finalPath;
 } PathFinder_AStar_t;
 

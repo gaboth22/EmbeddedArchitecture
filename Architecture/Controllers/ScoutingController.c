@@ -14,14 +14,13 @@ enum
     CompleteUTurn = 17,
 
     DistanceForOneCellCm = 5,
-    DistanceToCountAWallInThatDirectionCm = 30,
 
     CurrentHeading_N = 0,
     CurrentHeading_S = 1,
     CurrentHeading_W = 2,
     CurrentHeading_E = 3,
 
-    ForwardDistanceThresholdForTurnCm = 28,
+    ForwardDistanceThresholdForTurnCm = 25,
     DistanceToKickForwardMotion = 150,
 
     TicksForATurn = 90,
@@ -29,8 +28,10 @@ enum
     Left = 100,
     Right = 101,
 
-    DistanceToMoveAfterDetectingAWallUpfrontCm = 6,
-    FrontDistanceToForceStopCm = 13
+    DistanceToMoveAfterDetectingAWallUpfrontCm = 7,
+    FrontDistanceToForceStopCm = 13,
+
+    DistanceToConsiderAWallInThatDirectionCm = 30
 };
 
 static void Uint8To2LengthString(uint8_t data, char *buffer)
@@ -162,6 +163,72 @@ static void TurnTowardsDirection(ScoutingController_t *instance, XYCoordinate_t 
     }
 }
 
+static void ClearCellThatIsActuallyOpen(ScoutingController_t *instance)
+{
+    switch(instance->currentHeading)
+    {
+        case CurrentHeading_N:
+            if(DistanceSensor_GetDistanceInCm(instance->leftSensor) > DistanceToConsiderAWallInThatDirectionCm)
+            {
+                GridMap_FirstQuadrant5cmCell3m2x3m2_ClearCellValueAtIndex(
+                    &instance->blockedAreasGrid, instance->xpos - 1, instance->ypos);
+            }
+
+            if(DistanceSensor_GetDistanceInCm(instance->rightSensor) > DistanceToConsiderAWallInThatDirectionCm)
+            {
+                GridMap_FirstQuadrant5cmCell3m2x3m2_ClearCellValueAtIndex(
+                    &instance->blockedAreasGrid, instance->xpos + 1, instance->ypos);
+            }
+
+            break;
+
+        case CurrentHeading_S:
+            if(DistanceSensor_GetDistanceInCm(instance->leftSensor) > DistanceToConsiderAWallInThatDirectionCm)
+            {
+                GridMap_FirstQuadrant5cmCell3m2x3m2_ClearCellValueAtIndex(
+                    &instance->blockedAreasGrid, instance->xpos + 1, instance->ypos);
+            }
+
+            if(DistanceSensor_GetDistanceInCm(instance->rightSensor) > DistanceToConsiderAWallInThatDirectionCm)
+            {
+                GridMap_FirstQuadrant5cmCell3m2x3m2_ClearCellValueAtIndex(
+                    &instance->blockedAreasGrid, instance->xpos - 1, instance->ypos);
+            }
+
+            break;
+
+        case CurrentHeading_W:
+            if(DistanceSensor_GetDistanceInCm(instance->rightSensor) > DistanceToConsiderAWallInThatDirectionCm)
+            {
+                GridMap_FirstQuadrant5cmCell3m2x3m2_ClearCellValueAtIndex(
+                    &instance->blockedAreasGrid, instance->xpos, instance->ypos + 1);
+            }
+
+            if(DistanceSensor_GetDistanceInCm(instance->leftSensor) > DistanceToConsiderAWallInThatDirectionCm)
+            {
+                GridMap_FirstQuadrant5cmCell3m2x3m2_ClearCellValueAtIndex(
+                    &instance->blockedAreasGrid, instance->xpos, instance->ypos - 1);
+            }
+
+            break;
+
+        case CurrentHeading_E:
+            if(DistanceSensor_GetDistanceInCm(instance->rightSensor) > DistanceToConsiderAWallInThatDirectionCm)
+            {
+                GridMap_FirstQuadrant5cmCell3m2x3m2_ClearCellValueAtIndex(
+                    &instance->blockedAreasGrid, instance->xpos, instance->ypos - 1);
+            }
+
+            if(DistanceSensor_GetDistanceInCm(instance->leftSensor) > DistanceToConsiderAWallInThatDirectionCm)
+            {
+                GridMap_FirstQuadrant5cmCell3m2x3m2_ClearCellValueAtIndex(
+                    &instance->blockedAreasGrid, instance->xpos, instance->ypos + 1);
+            }
+
+            break;
+    }
+}
+
 void ScoutingController_Run(ScoutingController_t *instance)
 {
     if(instance->start)
@@ -182,8 +249,9 @@ void ScoutingController_Run(ScoutingController_t *instance)
         {
             case StartForwardMotion:
                 {
-                    LcdDisplayController_SetCursorIndex(
-                        instance->lcd, 1, 0);
+//                    LcdDisplayController_SetCursorIndex(
+//                        instance->lcd, 1, 0);
+                    ClearCellThatIsActuallyOpen(instance);
 
                     instance->state = MonitorForwardDistanceToStop;
                     DistanceProviderCm_EnableDistanceTracking(instance->distanceProvider);
@@ -237,57 +305,58 @@ void ScoutingController_Run(ScoutingController_t *instance)
             case GenerateHeadingTowardsUnscoutedNonBlockedCells:
                 {
                     XYCoordinate_t currentPosition = { instance->xpos, instance->ypos };
+                    ClearCellThatIsActuallyOpen(instance);
                     XYCoordinate_t openSpot =
                         WayPointProvider_GetWayPoint(instance->waypointProvider, currentPosition);
-                    instance->path =
-                        PathFinder_GetPath(
-                            instance->pathFinder,
-                            &instance->blockedAreasGrid,
-                            currentPosition,
-                            openSpot);
+//                    instance->path =
+//                        PathFinder_GetPath(
+//                            instance->pathFinder,
+//                            &instance->blockedAreasGrid,
+//                            currentPosition,
+//                            openSpot);
 
-                    char msg[16];
+//                    char msg[16];
+//
+//                    char at[] = "(  ,  )";
+//                    char buff[2];
+//
+//                    Uint8To2LengthString(instance->xpos, &buff[0]);
+//
+//                    at[1] = buff[0];
+//                    at[2] = buff[1];
+//
+//                    Uint8To2LengthString(instance->ypos, &buff[0]);
+//
+//                    at[4] = buff[0];
+//                    at[5] = buff[1];
+//
+//                    char open[] = "(  ,  )";
+//
+//                    Uint8To2LengthString(openSpot.x, &buff[0]);
+//
+//                    open[1] = buff[0];
+//                    open[2] = buff[1];
+//
+//                    Uint8To2LengthString(openSpot.y, &buff[0]);
+//
+//                    open[4] = buff[0];
+//                    open[5] = buff[1];
+//
+//                    strcpy(msg, at);
+//                    strcat(msg, open);
 
-                    char at[] = "(  ,  )";
-                    char buff[2];
+//                    LcdDisplayController_WriteString(instance->lcd, msg, 14);
 
-                    Uint8To2LengthString(instance->xpos, &buff[0]);
-
-                    at[1] = buff[0];
-                    at[2] = buff[1];
-
-                    Uint8To2LengthString(instance->ypos, &buff[0]);
-
-                    at[4] = buff[0];
-                    at[5] = buff[1];
-
-                    char open[] = "(  ,  )";
-
-                    Uint8To2LengthString(openSpot.x, &buff[0]);
-
-                    open[1] = buff[0];
-                    open[2] = buff[1];
-
-                    Uint8To2LengthString(openSpot.y, &buff[0]);
-
-                    open[4] = buff[0];
-                    open[5] = buff[1];
-
-                    strcpy(msg, at);
-                    strcat(msg, open);
-
-                    LcdDisplayController_WriteString(instance->lcd, msg, 14);
-
-                    if(Stack_Size(instance->path) == 1)
-                    {
+//                    if(Stack_Size(instance->path) == 1)
+//                    {
+//                        instance->state = JustTurnTowardsDirection;
+//                        TurnTowardsDirection(instance, openSpot);
+//                    }
+//                    else
+//                    {
                         instance->state = JustTurnTowardsDirection;
                         TurnTowardsDirection(instance, openSpot);
-                    }
-                    else
-                    {
-                        instance->state = JustTurnTowardsDirection;
-                        TurnTowardsDirection(instance, openSpot);
-                    }
+//                    }
                 }
                 break;
 

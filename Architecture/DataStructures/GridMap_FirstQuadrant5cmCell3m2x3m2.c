@@ -44,8 +44,6 @@ uint8_t GridMap_FirstQuadrant5cmCell3m2x3m2_GetCellValueAtIndex(
 {
     Uassert((x < 63));
     Uassert((y < 63));
-    Uassert((x > -1));
-    Uassert((y > -1));
 
     return (((instance->grid[y] << x) & 0x8000000000000000) > 0 ? 1: 0);
 }
@@ -56,9 +54,6 @@ void GridMap_FirstQuadrant5cmCell3m2x3m2_GetIndicesOfAdjacents(
     int8_t y,
     uint8_t *indices)
 {
-    if(x > 63 || y > 63 || x < 0 || y < 0)
-        return;
-
     /* N */
     *indices = x;
     *(indices + 1) = ((y + 1) > 63) ? UINT8_MAX : (y + 1);

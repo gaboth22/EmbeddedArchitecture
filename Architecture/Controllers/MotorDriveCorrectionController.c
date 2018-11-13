@@ -5,10 +5,9 @@
 enum
 {
     OverFactor = 1,
-    ThresholdToConsiderWallTooCloseToWallCm = 10,
     ThresholToConsiderAWallInThatDirectionCm = 40,
-    ThresholdToConsiderWallTooCloseCm = 10,
-    ForceCorrectionFactor = 20
+    ThresholdToConsiderWallTooCloseCm = 15,
+    ForceCorrectionFactor = 15
 };
 
 int64_t MotorDriveCorrectionController_GetCorrectionFactor(MotorDriveCorrectionController_t *instance)
@@ -33,23 +32,25 @@ int64_t MotorDriveCorrectionController_GetCorrectionFactor(MotorDriveCorrectionC
         }
 
         factor = rightUltraSonicDistanceCm - leftUltraSonicDistanceCm;
-        factor += OverFactor;
+        factor = (factor > 0) ? (factor + OverFactor) : (factor - OverFactor);
     }
     else if(leftUltraSonicDistanceCm < ThresholToConsiderAWallInThatDirectionCm)
     {
-        if(leftUltraSonicDistanceCm < ThresholdToConsiderWallTooCloseToWallCm)
+        if(leftUltraSonicDistanceCm < ThresholdToConsiderWallTooCloseCm)
         {
-            factor = TRUNCATE_U16_SUBTRACTION(ThresholdToConsiderWallTooCloseToWallCm, leftUltraSonicDistanceCm);
-            factor += factor > 0 ? OverFactor : 0;
+//            factor = TRUNCATE_U16_SUBTRACTION(ThresholdToConsiderWallTooCloseToWallCm, leftUltraSonicDistanceCm);
+//            factor += factor > 0 ? OverFactor : 0;
+            return ForceCorrectionFactor;
         }
     }
     else if(rightUltraSonicDistanceCm < ThresholToConsiderAWallInThatDirectionCm)
     {
-        if(rightUltraSonicDistanceCm < ThresholdToConsiderWallTooCloseToWallCm)
+        if(rightUltraSonicDistanceCm < ThresholdToConsiderWallTooCloseCm)
         {
-            factor = TRUNCATE_U16_SUBTRACTION(ThresholdToConsiderWallTooCloseToWallCm, leftUltraSonicDistanceCm);
-            factor += factor > 0 ? OverFactor : 0;
-            factor = -1 * factor;
+//            factor = TRUNCATE_U16_SUBTRACTION(ThresholdToConsiderWallTooCloseToWallCm, leftUltraSonicDistanceCm);
+//            factor += factor > 0 ? OverFactor : 0;
+//            factor = -1 * factor;
+            return -ForceCorrectionFactor;
         }
     }
 
