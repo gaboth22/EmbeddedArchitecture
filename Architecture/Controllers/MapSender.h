@@ -19,6 +19,7 @@ typedef struct
     EventSubscriber_Synchronous_t onByteReceivedSub;
     bool dmaTrxDone;
     bool gotAck;
+    bool uartAcquiredAllGood;
     uint32_t dmaChannel;
     void *dmaOutputBufferAddress;
     TimerOneShot_t timerToResetModule;

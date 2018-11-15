@@ -25,6 +25,7 @@ typedef struct
     void *outputUartTxBufferAddress;
     bool receivedAck;
     bool dmaTxDone;
+    bool uartAcquiredAllGood;
     TimerPeriodic_t timerToTryAndAcquireUart;
     TimerOneShot_t timerToResetModule;
     bool busy;

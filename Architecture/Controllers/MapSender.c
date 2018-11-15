@@ -10,15 +10,13 @@ enum
     PeriodToPollUartMs = 5
 };
 
-static void ActuallySendMaps(MapSender_t *instance);
-
 static void TryAcquireUart(void *context)
 {
     RECAST(instance, context, MapSender_t *);
     if(Uart_Acquire(instance->wifiUart))
     {
-        TimerPeriodic_Command(&instance->timerToAcquireUart, TimerPeriodicCommand_Stop);
-        ActuallySendMaps(instance);
+        TimerPeriodic_Command(&instance->timerToAcquireUart, TimerPeriodicCommand_Pause);
+        instance->uartAcquiredAllGood = true;
     }
 }
 
@@ -29,6 +27,7 @@ static void ResetModule(void *context)
     instance->dmaTrxDone = true;
     instance->gotAck = true;
     DmaController_ClearState(instance->dmaController);
+    Uart_Release(instance->wifiUart);
 }
 
 static void InterpretAck(void *context, void *args)
@@ -104,6 +103,13 @@ void MapSender_SendMaps(
 
 void MapSender_Run(MapSender_t *instance)
 {
+    if(instance->uartAcquiredAllGood)
+    {
+        instance->uartAcquiredAllGood = false;
+        TimerPeriodic_Command(&instance->timerToAcquireUart, TimerPeriodicCommand_Stop);
+        ActuallySendMaps(instance);
+    }
+
     if(instance->dmaTrxDone && instance->gotAck)
     {
         instance->dmaTrxDone = false;
@@ -139,6 +145,7 @@ void MapSender_Init(
     instance->gotAck = false;
     instance->dmaOutputBufferAddress = outputBufferAddress;
     instance->busy = false;
+    instance->uartAcquiredAllGood = false;
 
     TimerPeriodic_Init(&instance->timerToAcquireUart, timerModule, PeriodToPollUartMs, TryAcquireUart, instance);
     TimerOneShot_Init(&instance->timerToResetModule, timerModule, PeriodToResetModuleMs, ResetModule, instance);
