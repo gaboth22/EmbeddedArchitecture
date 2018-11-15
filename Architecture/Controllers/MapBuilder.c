@@ -187,6 +187,8 @@ XYCoordinate_t MapBuilder_Run(
     DistanceInCm_t distanceMovedSoFar =
         DistanceProviderCm_GetDistance(instance->distanceProvider);
 
+    GridMap_FirstQuadrant5cmCell3m2x3m2_ClearCellValueAtIndex(blockedAreasGrid, xpos, ypos);
+
     currentPos = PopulateGridsAndUpdatePosition(
         instance,
         distanceMovedSoFar,
@@ -195,6 +197,8 @@ XYCoordinate_t MapBuilder_Run(
         currentHeading,
         visitedAreasGrid,
         blockedAreasGrid);
+
+    GridMap_FirstQuadrant5cmCell3m2x3m2_ClearCellValueAtIndex(blockedAreasGrid, currentPos.x, currentPos.y);
 
     if(distanceMovedSoFar > 0)
     {

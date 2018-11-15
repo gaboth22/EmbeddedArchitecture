@@ -92,7 +92,7 @@ static void RunPidForward(MotorController_t *instance)
         if(correction < 0)
         {
             leftMotorPidOutput =
-                    TRUNCATE_U64_SUBSTRACTION(leftMotorPidOutput, (-1 * correction));
+                TRUNCATE_U64_SUBSTRACTION(leftMotorPidOutput, (-1 * correction));
         }
 
         Pwm_SetDutyCycle(instance->pwmLeftBwd, 0);

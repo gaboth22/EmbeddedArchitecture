@@ -20,6 +20,7 @@ void Queue_Push(Queue_t *instance, void *data)
 
     instance->size++;
     instance->pushIndex++;
+    instance->pushIndex = instance->pushIndex % instance->maxSize;
 }
 
 void Queue_Pop(Queue_t *instance, void *data)
@@ -39,14 +40,16 @@ void Queue_Pop(Queue_t *instance, void *data)
     else
     {
         instance->popIndex++;
+        instance->popIndex = instance->popIndex % instance->maxSize;
     }
 }
 
-void Queue_Init(Queue_t *instance, void *dataBuffer, size_t sizeOfDataType)
+void Queue_Init(Queue_t *instance, void *dataBuffer, uint16_t maxSize, size_t sizeOfDataType)
 {
     instance->size = 0;
     instance->popIndex = 0;
     instance->pushIndex = 0;
     instance->dataBuffer = dataBuffer;
     instance->sizeOfType = sizeOfDataType;
+    instance->maxSize = maxSize;
 }

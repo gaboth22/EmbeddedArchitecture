@@ -25,7 +25,7 @@ typedef struct
     void *outputUartTxBufferAddress;
     bool receivedAck;
     bool dmaTxDone;
-    TimerPeriodic_t periodicForwardImageTimer;
+    TimerPeriodic_t timerToTryAndAcquireUart;
     TimerOneShot_t timerToResetModule;
     bool busy;
     CameraImage_t *image;

@@ -121,7 +121,7 @@ static Stack_t * GetPath(
     RECAST(instance, _instance, PathFinder_AStar_t *);
 
     Stack_Init(&instance->finalPath, &instance->finalPathDataBuffer[0], sizeof(XYCoordinate_t));
-    Queue_Init(&instance->nonVisited, &instance->nonVisitedDataBuffer[0], sizeof(XYCoordinate_t));
+    Queue_Init(&instance->nonVisited, &instance->nonVisitedDataBuffer[0], MaxBuffSize, sizeof(XYCoordinate_t));
     GridMap_FirstQuadrant5cmCell3m2x3m2_Init(&instance->visited);
     ResetCellInfo(instance);
 

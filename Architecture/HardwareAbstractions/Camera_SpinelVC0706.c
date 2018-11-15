@@ -56,7 +56,7 @@ static const uint8_t StopImageCaptureCommand[] =
     { 0x56, 0x00, 0x36, 0x01, 0x03 };
 
 static const uint8_t StopImageCaptureAckBytes[] =
-    { 0x076, 0x00, 0x36, 0x00, 0x00 };
+    { 0x76, 0x00, 0x36, 0x00, 0x00 };
 
 static uint8_t ReadImageDataCommandBytes[] =
     { 0x56, 0x00, 0x32, 0x0C, 0x00, 0x0A, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0A };
@@ -72,6 +72,9 @@ static bool StartImageCapture(I_Camera_t *instance)
         cam->busy = true;
         cam->bufferIndex = 0;
         Event_Subscribe(Uart_GetOnByteReceivedEvent(cam->uart), &cam->uartSub.interface);
+        Event_Subscribe(
+            DmaController_GetOnChannelTransferDoneEvent(cam->dmaController, cam->dmaChannel),
+            &cam->dmaSub.interface);
         Uart_EnableRx(cam->uart);
         TimerOneShot_Stop(&cam->resetModuleTimer);
         TimerOneShot_Start(&cam->resetModuleTimer);
@@ -337,12 +340,15 @@ void Camera_SpinelVC076_Run(Camera_SpinelVC0706_t *instance)
 
     if(CameraState_ImageCycleDone == instance->state)
     {
+        TimerOneShot_Stop(&instance->resetModuleTimer);
         instance->state = CameraState_Uninitialized;
         instance->image.image = instance->imageBuffer;
         instance->image.imageSize = GetConcatenatedImageLength(
             instance->currentImageLengthHighByte,
             instance->currentImageLengthLowByte) + ExtraBytesForCameraAck;
-        TimerOneShot_Stop(&instance->resetModuleTimer);
+        Event_Unsubscribe(
+            DmaController_GetOnChannelTransferDoneEvent(instance->dmaController, instance->dmaChannel),
+            &instance->dmaSub.interface);
         Event_Publish(&instance->onImageCaptureDone.interface, &instance->image);
         instance->busy = false;
     }
@@ -384,15 +390,9 @@ void Camera_SpinelVC076_Init(
     TimerOneShot_Init(&instance->resetModuleTimer, timerModule, 1000, ResetModule, instance);
 
     EventSubscriber_Synchronous_Init(&instance->uartSub, ReceiveByte, instance);
-
     EventSubscriber_Synchronous_Init(&instance->dmaSub, DmaRxDoneCallback, instance);
-    Event_Subscribe(
-        DmaController_GetOnChannelTransferDoneEvent(instance->dmaController, instance->dmaChannel),
-        &instance->dmaSub.interface);
-
     Event_Synchronous_Init(&instance->onImageCaptureDone);
 
     TimerOneShot_Init(&instance->waitForCameraTimer, timerModule, WaitForCameraInitMs, SetResolution, instance);
     TimerOneShot_Start(&instance->waitForCameraTimer);
 }
-

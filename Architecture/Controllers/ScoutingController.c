@@ -20,16 +20,15 @@ enum
     CurrentHeading_W = 2,
     CurrentHeading_E = 3,
 
-    ForwardDistanceThresholdForTurnCm = 25,
+    ForwardDistanceThresholdForTurnCm = 22,
     DistanceToKickForwardMotion = 150,
 
-    TicksForATurn = 90,
+    TicksForATurn = 85,
 
     Left = 100,
     Right = 101,
 
-    DistanceToMoveAfterDetectingAWallUpfrontCm = 7,
-    FrontDistanceToForceStopCm = 13,
+    DistanceToMoveAfterDetectingAWallUpfrontCm = 5,
 
     DistanceToConsiderAWallInThatDirectionCm = 30
 };
@@ -249,8 +248,6 @@ void ScoutingController_Run(ScoutingController_t *instance)
         {
             case StartForwardMotion:
                 {
-//                    LcdDisplayController_SetCursorIndex(
-//                        instance->lcd, 1, 0);
                     ClearCellThatIsActuallyOpen(instance);
 
                     instance->state = MonitorForwardDistanceToStop;

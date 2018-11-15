@@ -10,6 +10,7 @@ typedef struct
     uint8_t popIndex;
     uint8_t pushIndex;
     size_t sizeOfType;
+    uint16_t maxSize;
 } Queue_t;
 
 /*
@@ -35,6 +36,6 @@ void Queue_Pop(Queue_t *instance, void *data);
 /*
  * Initialize the Queue
  */
-void Queue_Init(Queue_t *instance, void *dataBuffer, size_t sizeOfDataType);
+void Queue_Init(Queue_t *instance, void *dataBuffer, uint16_t maxSize, size_t sizeOfDataType);
 
 #endif

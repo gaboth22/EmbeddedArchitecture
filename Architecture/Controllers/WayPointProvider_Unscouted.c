@@ -48,7 +48,7 @@ static XYCoordinate_t GetOpenCoordinate(
     XYCoordinate_t currentPosition)
 {
     /*
-     * Do a standar BFS until the first non-blocked, non-visited cell is found
+     * Do a standard BFS until the first non-blocked, non-visited cell is found
      */
     PushIndicesOfNonBlockedAdjacents(instance, currentPosition);
     XYCoordinate_t possiblyOpen;
@@ -63,7 +63,7 @@ static XYCoordinate_t GetOpenCoordinate(
                possiblyOpen.x,
                possiblyOpen.y))
         {
-            Queue_Init(&instance->queue, &instance->queueBuffer[0], sizeof(XYCoordinate_t));
+            Queue_Init(&instance->queue, &instance->queueBuffer[0], QueueBufferSizeBytes, sizeof(XYCoordinate_t));
             break;
         }
 
@@ -92,5 +92,5 @@ void WayPointProvider_Unscouted_Init(
     instance->interface.api = &api;
     instance->visitedGrid = visitedGrid;
     instance->blockedGird = blockedGird;
-    Queue_Init(&instance->queue, &instance->queueBuffer[0], sizeof(XYCoordinate_t));
+    Queue_Init(&instance->queue, &instance->queueBuffer[0], QueueBufferSizeBytes, sizeof(XYCoordinate_t));
 }

@@ -4,10 +4,12 @@
 
 enum
 {
-    OverFactor = 1,
-    ThresholToConsiderAWallInThatDirectionCm = 40,
-    ThresholdToConsiderWallTooCloseCm = 15,
-    ForceCorrectionFactor = 15
+    OverFactor = 10,
+    ThresholToConsiderAWallInThatDirectionCm = 30,
+    ThresholdToConsiderWallTooCloseCm = 14,
+    LeftThresholdToConsiderWallTooCloseCm = 10,
+    ForceCorrectionFactor = 15,
+    SmallOverFactor = 6
 };
 
 int64_t MotorDriveCorrectionController_GetCorrectionFactor(MotorDriveCorrectionController_t *instance)
@@ -22,34 +24,25 @@ int64_t MotorDriveCorrectionController_GetCorrectionFactor(MotorDriveCorrectionC
     if(leftUltraSonicDistanceCm < ThresholToConsiderAWallInThatDirectionCm &&
        rightUltraSonicDistanceCm < ThresholToConsiderAWallInThatDirectionCm)
     {
-        if(leftUltraSonicDistanceCm < ThresholdToConsiderWallTooCloseCm)
-        {
-            return ForceCorrectionFactor;
-        }
-        if(rightUltraSonicDistanceCm < ThresholdToConsiderWallTooCloseCm)
-        {
-            return -ForceCorrectionFactor;
-        }
+        factor = rightUltraSonicDistanceCm > leftUltraSonicDistanceCm ?
+                rightUltraSonicDistanceCm - leftUltraSonicDistanceCm :
+                -(leftUltraSonicDistanceCm - rightUltraSonicDistanceCm);
 
-        factor = rightUltraSonicDistanceCm - leftUltraSonicDistanceCm;
-        factor = (factor > 0) ? (factor + OverFactor) : (factor - OverFactor);
+        factor = (factor > 0) ? (factor + SmallOverFactor) : (factor - SmallOverFactor);
     }
-    else if(leftUltraSonicDistanceCm < ThresholToConsiderAWallInThatDirectionCm)
+
+    if(leftUltraSonicDistanceCm < ThresholToConsiderAWallInThatDirectionCm)
     {
-        if(leftUltraSonicDistanceCm < ThresholdToConsiderWallTooCloseCm)
+        if(leftUltraSonicDistanceCm < LeftThresholdToConsiderWallTooCloseCm)
         {
-//            factor = TRUNCATE_U16_SUBTRACTION(ThresholdToConsiderWallTooCloseToWallCm, leftUltraSonicDistanceCm);
-//            factor += factor > 0 ? OverFactor : 0;
             return ForceCorrectionFactor;
         }
     }
-    else if(rightUltraSonicDistanceCm < ThresholToConsiderAWallInThatDirectionCm)
+
+    if(rightUltraSonicDistanceCm < ThresholToConsiderAWallInThatDirectionCm)
     {
         if(rightUltraSonicDistanceCm < ThresholdToConsiderWallTooCloseCm)
         {
-//            factor = TRUNCATE_U16_SUBTRACTION(ThresholdToConsiderWallTooCloseToWallCm, leftUltraSonicDistanceCm);
-//            factor += factor > 0 ? OverFactor : 0;
-//            factor = -1 * factor;
             return -ForceCorrectionFactor;
         }
     }

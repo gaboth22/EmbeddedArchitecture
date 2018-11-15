@@ -57,30 +57,31 @@ void CommunicationArbiter_Init(
     instance->visited = visited;
     instance->blocked = blocked;
 
-//    EventSubscriber_Synchronous_Init(&instance->imageForwardedSub, SetRunningStateToMotion, instance);
+    EventSubscriber_Synchronous_Init(&instance->imageForwardedSub, SetRunningStateToSendMap, instance);
 //    EventSubscriber_Synchronous_Init(&instance->motionAcknowledgedSub, SetRunningStateToSendMap, instance);
-//    EventSubscriber_Synchronous_Init(&instance->sendMapsDoneSub, SetRunningStateToImage, instance);
-//    Event_Subscribe(ImageForwardingController_GetOnImageForwardedEvent(imageForwardingController), &instance->imageForwardedSub.interface);
+    EventSubscriber_Synchronous_Init(&instance->sendMapsDoneSub, SetRunningStateToImage, instance);
+    Event_Subscribe(ImageForwardingController_GetOnImageForwardedEvent(imageForwardingController), &instance->imageForwardedSub.interface);
 //    Event_Subscribe(RemoteMotionController_GetOnMotionAcknowledgedEvent(remoteMotionController), &instance->motionAcknowledgedSub.interface);
-//    Event_Subscribe(MapSender_GetOnMapsSentEvent(instance->mapSender), &instance->sendMapsDoneSub.interface);
+    Event_Subscribe(MapSender_GetOnMapsSentEvent(instance->mapSender), &instance->sendMapsDoneSub.interface);
 }
 
 void CommunicationArbiter_Run(CommunicationArbiter_t *instance)
 {
-//    switch(instance->runningState)
-//    {
-//        case RunningState_DoImageCaptureCycle:
-//            ImageForwardingController_ForwardOneImage(instance->imageForwardingController);
-//            ImageForwardingController_Run(instance->imageForwardingController);
-//            break;
+    switch(instance->runningState)
+    {
+        case RunningState_DoImageCaptureCycle:
+            ImageForwardingController_ForwardOneImage(instance->imageForwardingController);
+            ImageForwardingController_Run(instance->imageForwardingController);
+            break;
 //
 //        case RunningState_DoMotionCommandCycle:
 //            RemoteMotionController_DoMotion(instance->remoteMotionController);
 //            RemoteMotionController_Run(instance->remoteMotionController);
 //            break;
 //
-//        case RunningState_DoMapSendCycle:
+        case RunningState_DoMapSendCycle:
             MapSender_SendMaps(instance->mapSender, instance->visited, instance->blocked);
-//            break;
-//    }
+            MapSender_Run(instance->mapSender);
+            break;
+    }
 }
