@@ -20,10 +20,11 @@ enum
     CurrentHeading_W = 2,
     CurrentHeading_E = 3,
 
-    ForwardDistanceThresholdForTurnCm = 22,
-    DistanceToKickForwardMotion = 150,
+    ForwardDistanceThresholdForTurnCm = 21,
+    DistanceToKickForwardMotion = 300,
 
-    TicksForATurn = 85,
+    TicksForARightTurn = 85,
+    TicksForALeftTurn = 85,
 
     Left = 100,
     Right = 101,
@@ -32,15 +33,6 @@ enum
 
     DistanceToConsiderAWallInThatDirectionCm = 30
 };
-
-static void Uint8To2LengthString(uint8_t data, char *buffer)
-{
-    uint8_t byte1 = (data / 10);
-    uint8_t byte0 = (data % 10);
-
-    buffer[0] = (byte1 + '0');
-    buffer[1] = (byte0 + '0');
-}
 
 void ScoutingController_Start(ScoutingController_t *instance)
 {
@@ -85,7 +77,7 @@ static void TurnTowardsDirection(ScoutingController_t *instance, XYCoordinate_t 
         switch(instance->currentHeading)
         {
             case CurrentHeading_N:
-                MotorController_TurnRight(instance->motorController, TicksForATurn);
+                MotorController_TurnRight(instance->motorController, TicksForARightTurn);
                 instance->currentHeading = CurrentHeading_E;
                 break;
 
@@ -95,7 +87,7 @@ static void TurnTowardsDirection(ScoutingController_t *instance, XYCoordinate_t 
                 {
                     instance->state = CompleteUTurn;
                 }
-                MotorController_TurnLeft(instance->motorController, TicksForATurn);
+                MotorController_TurnLeft(instance->motorController, TicksForALeftTurn);
                 instance->currentHeading = CurrentHeading_E;
                 break;
         }
@@ -110,12 +102,12 @@ static void TurnTowardsDirection(ScoutingController_t *instance, XYCoordinate_t 
                 {
                   instance->state = CompleteUTurn;
                 }
-                MotorController_TurnLeft(instance->motorController, TicksForATurn);
+                MotorController_TurnLeft(instance->motorController, TicksForALeftTurn);
                 instance->currentHeading = CurrentHeading_W;
                 break;
 
             case CurrentHeading_S:
-                MotorController_TurnRight(instance->motorController, TicksForATurn);
+                MotorController_TurnRight(instance->motorController, TicksForARightTurn);
                 instance->currentHeading = CurrentHeading_W;
                 break;
         }
@@ -130,12 +122,12 @@ static void TurnTowardsDirection(ScoutingController_t *instance, XYCoordinate_t 
                 {
                     instance->state = CompleteUTurn;
                 }
-                MotorController_TurnLeft(instance->motorController, TicksForATurn);
+                MotorController_TurnLeft(instance->motorController, TicksForALeftTurn);
                 instance->currentHeading = CurrentHeading_N;
                 break;
 
             case CurrentHeading_W:
-                MotorController_TurnRight(instance->motorController, TicksForATurn);
+                MotorController_TurnRight(instance->motorController, TicksForARightTurn);
                 instance->currentHeading = CurrentHeading_N;
                 break;
         }
@@ -150,12 +142,12 @@ static void TurnTowardsDirection(ScoutingController_t *instance, XYCoordinate_t 
                 {
                     instance->state = CompleteUTurn;
                 }
-                MotorController_TurnLeft(instance->motorController, TicksForATurn);
+                MotorController_TurnLeft(instance->motorController, TicksForALeftTurn);
                 instance->currentHeading = CurrentHeading_S;
                 break;
 
             case CurrentHeading_E:
-                MotorController_TurnRight(instance->motorController, TicksForATurn);
+                MotorController_TurnRight(instance->motorController, TicksForARightTurn);
                 instance->currentHeading = CurrentHeading_S;
                 break;
         }
@@ -228,6 +220,29 @@ static void ClearCellThatIsActuallyOpen(ScoutingController_t *instance)
     }
 }
 
+static void DoCompleteUTurn(ScoutingController_t *instance)
+{
+    MotorController_ClearState(instance->motorController);
+
+    switch(instance->currentHeading)
+    {
+        case Heading_N:
+            instance->currentHeading = Heading_S;
+            break;
+        case Heading_S:
+            instance->currentHeading = Heading_N;
+            break;
+        case Heading_W:
+            instance->currentHeading = Heading_E;
+            break;
+        case Heading_E:
+            instance->currentHeading = Heading_W;
+            break;
+    }
+
+    MotorController_TurnLeft(instance->motorController, TicksForALeftTurn);
+}
+
 void ScoutingController_Run(ScoutingController_t *instance)
 {
     if(instance->start)
@@ -275,8 +290,6 @@ void ScoutingController_Run(ScoutingController_t *instance)
 
             case StartStopping:
                 {
-                    DistanceInCm_t forwardDistanceWithoutObstacle =
-                        DistanceSensor_GetDistanceInCm(instance->frontSensor);
                     instance->state = WaitForFullStop;
 
                     MotorController_ClearState(instance->motorController);
@@ -301,59 +314,30 @@ void ScoutingController_Run(ScoutingController_t *instance)
 
             case GenerateHeadingTowardsUnscoutedNonBlockedCells:
                 {
-                    XYCoordinate_t currentPosition = { instance->xpos, instance->ypos };
-                    ClearCellThatIsActuallyOpen(instance);
-                    XYCoordinate_t openSpot =
-                        WayPointProvider_GetWayPoint(instance->waypointProvider, currentPosition);
-//                    instance->path =
-//                        PathFinder_GetPath(
-//                            instance->pathFinder,
-//                            &instance->blockedAreasGrid,
-//                            currentPosition,
-//                            openSpot);
+                    if(!MotorController_Busy(instance->motorController))
+                    {
+                        XYCoordinate_t currentPosition = { instance->xpos, instance->ypos };
+                        ClearCellThatIsActuallyOpen(instance);
+                        XYCoordinate_t openSpot =
+                            WayPointProvider_GetWayPoint(
+                                instance->waypointProvider,
+                                currentPosition,
+                                (Heading_t)instance->currentHeading);
 
-//                    char msg[16];
-//
-//                    char at[] = "(  ,  )";
-//                    char buff[2];
-//
-//                    Uint8To2LengthString(instance->xpos, &buff[0]);
-//
-//                    at[1] = buff[0];
-//                    at[2] = buff[1];
-//
-//                    Uint8To2LengthString(instance->ypos, &buff[0]);
-//
-//                    at[4] = buff[0];
-//                    at[5] = buff[1];
-//
-//                    char open[] = "(  ,  )";
-//
-//                    Uint8To2LengthString(openSpot.x, &buff[0]);
-//
-//                    open[1] = buff[0];
-//                    open[2] = buff[1];
-//
-//                    Uint8To2LengthString(openSpot.y, &buff[0]);
-//
-//                    open[4] = buff[0];
-//                    open[5] = buff[1];
-//
-//                    strcpy(msg, at);
-//                    strcat(msg, open);
-
-//                    LcdDisplayController_WriteString(instance->lcd, msg, 14);
-
-//                    if(Stack_Size(instance->path) == 1)
-//                    {
-//                        instance->state = JustTurnTowardsDirection;
-//                        TurnTowardsDirection(instance, openSpot);
-//                    }
-//                    else
-//                    {
-                        instance->state = JustTurnTowardsDirection;
-                        TurnTowardsDirection(instance, openSpot);
-//                    }
+                        if(openSpot.x == UINT8_MAX || openSpot.y == UINT8_MAX )
+                        {
+                            instance->state = CompleteUTurn;
+                            MotorController_ClearState(instance->motorController);
+                            DistanceProviderCm_DisableDistanceTracking(instance->distanceProvider);
+                            DistanceProviderCm_ClearDistance(instance->distanceProvider);
+                            MotorController_TurnLeft(instance->motorController, TicksForALeftTurn);
+                        }
+                        else
+                        {
+                            instance->state = JustTurnTowardsDirection;
+                            TurnTowardsDirection(instance, openSpot);
+                        }
+                    }
                 }
                 break;
 
@@ -370,15 +354,9 @@ void ScoutingController_Run(ScoutingController_t *instance)
                 {
                     if(!MotorController_Busy(instance->motorController))
                     {
-                        MotorController_TurnLeft(instance->motorController, TicksForATurn);
+                        DoCompleteUTurn(instance);
                         instance->state = JustTurnTowardsDirection;
                     }
-                }
-                break;
-
-            case FollowPath:
-                {
-
                 }
                 break;
 

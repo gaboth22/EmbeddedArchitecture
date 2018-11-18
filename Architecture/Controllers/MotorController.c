@@ -92,7 +92,7 @@ static void RunPidForward(MotorController_t *instance)
         if(correction < 0)
         {
             leftMotorPidOutput =
-                TRUNCATE_U64_SUBSTRACTION(leftMotorPidOutput, (-1 * correction));
+                TRUNCATE_U64_SUBSTRACTION(leftMotorPidOutput, abs(correction));
         }
 
         Pwm_SetDutyCycle(instance->pwmLeftBwd, 0);
@@ -204,6 +204,7 @@ static void SetupDirection(MotorController_t *instance, uint16_t distanceToMoveL
 static void Forward(I_MotorController_t *_instance, uint16_t distanceToMove)
 {
     RECAST(instance, _instance, MotorController_t *);
+    MotorControllerBusyChecker_StartChecking(instance->busyChecker);
     instance->busy = true;
     instance->doSmoothStartup = true;
     instance->stopSmoothnessTimer = false;
@@ -211,12 +212,14 @@ static void Forward(I_MotorController_t *_instance, uint16_t distanceToMove)
     SetupDirection(instance, distanceToMove, distanceToMove - 3);
     instance->controllerDirection = ControllerDirection_Forward;
 
+    TimerPeriodic_Command(&instance->smoothStartupTimer, TimerPeriodicCommand_Stop);
     TimerPeriodic_Start(&instance->smoothStartupTimer);
 }
 
 static void TurnRight(I_MotorController_t *_instance, uint16_t distanceToMove)
 {
     RECAST(instance, _instance, MotorController_t *);
+    MotorControllerBusyChecker_StartChecking(instance->busyChecker);
     instance->busy = true;
     instance->doSmoothStartup = true;
     instance->stopSmoothnessTimer = false;
@@ -224,12 +227,14 @@ static void TurnRight(I_MotorController_t *_instance, uint16_t distanceToMove)
     SetupDirection(instance, distanceToMove, distanceToMove - 15);
     instance->controllerDirection = ControllerDirection_Right;
 
+    TimerPeriodic_Command(&instance->smoothStartupTimer, TimerPeriodicCommand_Stop);
     TimerPeriodic_Start(&instance->smoothStartupTimer);
 }
 
 static void TurnLeft(I_MotorController_t *_instance, uint16_t distanceToMove)
 {
     RECAST(instance, _instance, MotorController_t *);
+    MotorControllerBusyChecker_StartChecking(instance->busyChecker);
     instance->busy = true;
     instance->doSmoothStartup = true;
     instance->stopSmoothnessTimer = false;
@@ -237,12 +242,15 @@ static void TurnLeft(I_MotorController_t *_instance, uint16_t distanceToMove)
     SetupDirection(instance, distanceToMove, distanceToMove - 15);
     instance->controllerDirection = ControllerDirection_Left;
 
+    TimerPeriodic_Command(&instance->smoothStartupTimer, TimerPeriodicCommand_Stop);
     TimerPeriodic_Start(&instance->smoothStartupTimer);
 }
 
 static void Run(I_MotorController_t *_instance)
 {
     RECAST(instance, _instance, MotorController_t *);
+
+    MotorControllerBusyChecker_Run(instance->busyChecker);
 
     if(instance->stopSmoothnessTimer)
     {

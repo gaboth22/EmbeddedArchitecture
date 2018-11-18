@@ -8,16 +8,16 @@ static void SetOrClearBitAtIndex(
     int8_t y,
     uint8_t value)
 {
-    if(x > 63 || y > 63 || x < 0 || y < 0)
-        return;
-
-    if(value >0)
+    if(x <= 63 && y <= 63 && x >= 0 && y >= 0)
     {
-        instance->grid[y] |= (0x8000000000000000 >> x);
-    }
-    else
-    {
-        instance->grid[y] &=  ~(0x8000000000000000 >> x);
+        if(value > 0)
+        {
+            instance->grid[y] |= (0x8000000000000000 >> x);
+        }
+        else
+        {
+            instance->grid[y] &=  ~(0x8000000000000000 >> x);
+        }
     }
 }
 
@@ -42,8 +42,8 @@ uint8_t GridMap_FirstQuadrant5cmCell3m2x3m2_GetCellValueAtIndex(
     int8_t x,
     int8_t y)
 {
-    Uassert((x < 63));
-    Uassert((y < 63));
+    Uassert((x <= 63));
+    Uassert((y <= 63));
 
     return (((instance->grid[y] << x) & 0x8000000000000000) > 0 ? 1: 0);
 }

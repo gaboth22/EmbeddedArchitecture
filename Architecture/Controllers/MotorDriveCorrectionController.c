@@ -4,12 +4,12 @@
 
 enum
 {
-    OverFactor = 10,
     ThresholToConsiderAWallInThatDirectionCm = 30,
-    ThresholdToConsiderWallTooCloseCm = 14,
-    LeftThresholdToConsiderWallTooCloseCm = 10,
-    ForceCorrectionFactor = 15,
-    SmallOverFactor = 6
+    RightThresholdToConsiderWallTooCloseCm = 14,
+    LeftThresholdToConsiderWallTooCloseCm = 15,
+    ForceCorrectionFactor = 14,
+    OverFactor = 8,
+    SmallFactor = 5
 };
 
 int64_t MotorDriveCorrectionController_GetCorrectionFactor(MotorDriveCorrectionController_t *instance)
@@ -21,30 +21,24 @@ int64_t MotorDriveCorrectionController_GetCorrectionFactor(MotorDriveCorrectionC
 
     int64_t factor = 0;
 
-    if(leftUltraSonicDistanceCm < ThresholToConsiderAWallInThatDirectionCm &&
-       rightUltraSonicDistanceCm < ThresholToConsiderAWallInThatDirectionCm)
+    if(leftUltraSonicDistanceCm <= LeftThresholdToConsiderWallTooCloseCm)
     {
-        factor = rightUltraSonicDistanceCm > leftUltraSonicDistanceCm ?
-                rightUltraSonicDistanceCm - leftUltraSonicDistanceCm :
-                -(leftUltraSonicDistanceCm - rightUltraSonicDistanceCm);
-
-        factor = (factor > 0) ? (factor + SmallOverFactor) : (factor - SmallOverFactor);
+        return ForceCorrectionFactor;
     }
-
-    if(leftUltraSonicDistanceCm < ThresholToConsiderAWallInThatDirectionCm)
+    else if(rightUltraSonicDistanceCm <= RightThresholdToConsiderWallTooCloseCm)
     {
-        if(leftUltraSonicDistanceCm < LeftThresholdToConsiderWallTooCloseCm)
-        {
-            return ForceCorrectionFactor;
-        }
+        return -1 * ForceCorrectionFactor;
     }
-
-    if(rightUltraSonicDistanceCm < ThresholToConsiderAWallInThatDirectionCm)
+    else if(leftUltraSonicDistanceCm < ThresholToConsiderAWallInThatDirectionCm &&
+            rightUltraSonicDistanceCm < ThresholToConsiderAWallInThatDirectionCm)
     {
-        if(rightUltraSonicDistanceCm < ThresholdToConsiderWallTooCloseCm)
-        {
-            return -ForceCorrectionFactor;
-        }
+//        factor = rightUltraSonicDistanceCm > leftUltraSonicDistanceCm ?
+//                TRUNCATE_U64_SUBSTRACTION(rightUltraSonicDistanceCm, leftUltraSonicDistanceCm) :
+//                -(TRUNCATE_U64_SUBSTRACTION(leftUltraSonicDistanceCm, rightUltraSonicDistanceCm));
+
+//        factor = (factor > 0) ? (factor + OverFactor) : (factor - OverFactor);
+
+        factor = rightUltraSonicDistanceCm > leftUltraSonicDistanceCm ? SmallFactor : -1 * SmallFactor;
     }
 
     return factor;

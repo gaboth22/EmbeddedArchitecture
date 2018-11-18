@@ -6,10 +6,16 @@
 #include "Stack.h"
 #include "Queue.h"
 
+//enum
+//{
+//    MaxGridSize = 64,
+//    MaxBuffSize = 4096
+//};
+
 enum
 {
-    MaxGridSize = 64,
-    MaxBuffSize = 250
+    MaxGridSize = 1,
+    MaxBuffSize = 1
 };
 
 typedef struct

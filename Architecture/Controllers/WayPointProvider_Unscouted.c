@@ -75,8 +75,10 @@ static XYCoordinate_t GetOpenCoordinate(
 
 static XYCoordinate_t GetWayPoint(
     I_WayPointProvider_t *_instance,
-    XYCoordinate_t currentPosition)
+    XYCoordinate_t currentPosition,
+    Heading_t heading)
 {
+    IGNORE(heading);
     RECAST(instance, _instance, WayPointProvider_Unscouted_t *);
     return GetOpenCoordinate(instance, currentPosition);
 }

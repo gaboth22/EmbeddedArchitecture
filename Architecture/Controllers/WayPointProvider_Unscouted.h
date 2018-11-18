@@ -5,9 +5,14 @@
 #include "GridMap_FirstQuadrant5cmCell3m2x3m2.h"
 #include "I_WayPointProvider.h"
 
+//enum
+//{
+//    QueueBufferSizeBytes = 4096
+//};
+
 enum
 {
-    QueueBufferSizeBytes = 250
+    QueueBufferSizeBytes = 1
 };
 
 typedef struct

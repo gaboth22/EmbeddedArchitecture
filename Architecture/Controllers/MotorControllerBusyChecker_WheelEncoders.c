@@ -3,49 +3,63 @@
 
 enum
 {
-    TimeToConsiderEncoderAsNotBusyMs = 500
+    TimeToPollEncodersMs = 100
 };
 
-static void MarkRightAsNotBusy(void *context)
-{
-    RECAST(instance, context, MotorControllerBusyChecker_WheelEncoders_t *);
-    instance->rightBusy = false;
-}
-
-static void StartTimerToMarkRightAsNotBusy(void *context, void *args)
+static void IncreaseTickCount(void *context, void *args)
 {
     IGNORE(args);
     RECAST(instance, context, MotorControllerBusyChecker_WheelEncoders_t *);
-    instance->rightBusy = true;
-
-    TimerOneShot_Stop(&instance->markRightAsNotBusyTimer);
-    TimerOneShot_Start(&instance->markRightAsNotBusyTimer);
+    instance->tickCount++;
 }
 
-static void MarkLeftAsNotBusy(void *context)
+static void ResetTickCount(void *context)
 {
     RECAST(instance, context, MotorControllerBusyChecker_WheelEncoders_t *);
-    instance->leftBusy = false;
-}
 
-static void StartTimerToMarkLeftAsNotBusy(void *context, void *args)
-{
-    IGNORE(args);
-    RECAST(instance, context, MotorControllerBusyChecker_WheelEncoders_t *);
-    instance->leftBusy = true;
-
-    TimerOneShot_Stop(&instance->markLeftAsNotBusyTimer);
-    TimerOneShot_Start(&instance->markLeftAsNotBusyTimer);
+    if(instance->tickCount > 0)
+    {
+        instance->tickCount = 0;
+    }
+    else
+    {
+        instance->stopTimer = true;
+    }
 }
 
 static bool Busy(I_MotorControllerBusyChecker_t *_instance)
 {
     RECAST(instance, _instance, MotorControllerBusyChecker_WheelEncoders_t *);
-    return instance->leftBusy && instance->rightBusy;
+    return instance->busy;
+}
+
+static void StartChecking(I_MotorControllerBusyChecker_t *_instance)
+{
+    RECAST(instance, _instance, MotorControllerBusyChecker_WheelEncoders_t *);
+    instance->busy = true;
+    instance->running = true;
+    instance->stopTimer = false;
+    instance->tickCount = 1;
+    TimerPeriodic_Command(&instance->timerToMarkMotorsAsNotBusy, TimerPeriodicCommand_Stop);
+    TimerPeriodic_Start(&instance->timerToMarkMotorsAsNotBusy);
+}
+
+static void Run(I_MotorControllerBusyChecker_t *_instance)
+{
+    RECAST(instance, _instance, MotorControllerBusyChecker_WheelEncoders_t *);
+
+    if(instance->stopTimer && instance->running)
+    {
+        instance->running = false;
+        TimerPeriodic_Command(
+            &instance->timerToMarkMotorsAsNotBusy,
+            TimerPeriodicCommand_Stop);
+        instance->busy = false;
+    }
 }
 
 static const MotorControllerBusyCheckerApi_t api =
-    { Busy };
+    { Busy, StartChecking, Run };
 
 void MotorControllerBusyChecker_WheelEncoders_Init(
     MotorControllerBusyChecker_WheelEncoders_t *instance,
@@ -54,32 +68,27 @@ void MotorControllerBusyChecker_WheelEncoders_Init(
     TimerModule_t *timerModule)
 {
     instance->interface.api = &api;
-    instance->rightBusy = false;
-    instance->leftBusy = false;
+    instance->running = false;
+    instance->stopTimer = false;
+    instance->busy = false;
+    instance->tickCount = 1;
 
-    TimerOneShot_Init(
-        &instance->markLeftAsNotBusyTimer,
+    TimerPeriodic_Init(
+        &instance->timerToMarkMotorsAsNotBusy,
         timerModule,
-        TimeToConsiderEncoderAsNotBusyMs,
-        MarkLeftAsNotBusy,
-        instance);
-
-    TimerOneShot_Init(
-        &instance->markRightAsNotBusyTimer,
-        timerModule,
-        TimeToConsiderEncoderAsNotBusyMs,
-        MarkRightAsNotBusy,
+        TimeToPollEncodersMs,
+        ResetTickCount,
         instance);
 
     EventSubscriber_Synchronous_Init(
         &instance->leftEncoderTickSub,
-        StartTimerToMarkLeftAsNotBusy,
+        IncreaseTickCount,
         instance);
     Event_Subscribe(onLeftWheelEncoderTick, &instance->leftEncoderTickSub.interface);
 
     EventSubscriber_Synchronous_Init(
         &instance->rightEncoderTickSub,
-        StartTimerToMarkRightAsNotBusy,
+        IncreaseTickCount,
         instance);
     Event_Subscribe(onRightWheelEncoderTick, &instance->rightEncoderTickSub.interface);
 }
