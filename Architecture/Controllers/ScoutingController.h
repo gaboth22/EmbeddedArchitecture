@@ -9,6 +9,8 @@
 #include "Stack.h"
 #include "LcdDisplayController.h"
 #include "MapBuilder.h"
+#include "TimerOneShot.h"
+#include "ImageRecognitionController.h"
 
 typedef struct
 {
@@ -30,6 +32,10 @@ typedef struct
     uint8_t currentHeading;
     LcdDisplayController_t *lcd;
     MapBuilder_t *mapBuilder;
+    uint8_t uTurnDirection;
+    uint8_t uTurnCount;
+    TimerOneShot_t timerToWaitAfterFindingImage;
+    ImageRecognitionController_t *imgRecognitionController;
 } ScoutingController_t;
 
 /*
@@ -65,6 +71,8 @@ void ScoutingController_Init(
     uint8_t startX,
     uint8_t startY,
     LcdDisplayController_t *lcd,
-    MapBuilder_t *mapBuilder);
+    MapBuilder_t *mapBuilder,
+    TimerModule_t *timerModule,
+    ImageRecognitionController_t *imgRecognitionController);
 
 #endif

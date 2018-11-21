@@ -35,6 +35,11 @@ struct _MotorControllerApi_t
     void (*TurnLeft)(I_MotorController_t *instance, MotorEncoderTicks_t numberOfTicksToMove);
 
     /*
+     * Move motors to make a left turn
+     */
+    void (*Backward)(I_MotorController_t *instance, MotorEncoderTicks_t numberOfTicksToMove);
+
+    /*
      * Returns true if the controller is moving the motors, false otherwise
      */
     bool (*Busy)(I_MotorController_t *instance);
@@ -56,6 +61,9 @@ struct _MotorControllerApi_t
 
 #define MotorController_TurnLeft(_instance, _numTicks) \
         (_instance)->api->TurnLeft(_instance, _numTicks) \
+
+#define MotorController_Backward(_instance, _numTicks) \
+        (_instance)->api->Backward(_instance, _numTicks) \
 
 #define MotorController_Busy(_instance) \
         (_instance)->api->Busy(_instance) \

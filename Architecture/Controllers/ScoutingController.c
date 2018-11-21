@@ -1,9 +1,12 @@
 #include <string.h>
 #include <math.h>
 #include "ScoutingController.h"
+#include "utils.h"
 
 enum
 {
+    UturnToTheLeft = 1,
+    UturnToTheRight = 2,
     StartForwardMotion = 10,
     MonitorForwardDistanceToStop = 11,
     StartStopping = 12,
@@ -12,6 +15,7 @@ enum
     JustTurnTowardsDirection = 15,
     FollowPath = 16,
     CompleteUTurn = 17,
+    DoNothing = 20,
 
     DistanceForOneCellCm = 5,
 
@@ -20,18 +24,22 @@ enum
     CurrentHeading_W = 2,
     CurrentHeading_E = 3,
 
-    ForwardDistanceThresholdForTurnCm = 21,
+    ForwardDistanceThresholdForTurnCm = 23,
     DistanceToKickForwardMotion = 300,
 
-    TicksForARightTurn = 85,
-    TicksForALeftTurn = 85,
+    TicksForARightTurn = 88,
+    TicksForALeftTurn = 87,
+
+    DistanceToMoveBackwardsToDetectImageCm = 15,
 
     Left = 100,
     Right = 101,
 
     DistanceToMoveAfterDetectingAWallUpfrontCm = 5,
 
-    DistanceToConsiderAWallInThatDirectionCm = 30
+    DistanceToConsiderAWallInThatDirectionCm = 30,
+
+    TimeToWaitAfterFindingImageMs = 11000
 };
 
 void ScoutingController_Start(ScoutingController_t *instance)
@@ -240,7 +248,14 @@ static void DoCompleteUTurn(ScoutingController_t *instance)
             break;
     }
 
-    MotorController_TurnLeft(instance->motorController, TicksForALeftTurn);
+    if(instance->uTurnDirection == UturnToTheLeft)
+    {
+        MotorController_TurnLeft(instance->motorController, TicksForALeftTurn);
+    }
+    else
+    {
+        MotorController_TurnRight(instance->motorController, TicksForARightTurn);
+    }
 }
 
 void ScoutingController_Run(ScoutingController_t *instance)
@@ -266,8 +281,11 @@ void ScoutingController_Run(ScoutingController_t *instance)
                     ClearCellThatIsActuallyOpen(instance);
 
                     instance->state = MonitorForwardDistanceToStop;
-                    DistanceProviderCm_EnableDistanceTracking(instance->distanceProvider);
-
+                    if(instance->uTurnCount == 0)
+                    {
+                        DistanceProviderCm_EnableDistanceTracking(instance->distanceProvider);
+                    }
+                    MotorController_ClearState(instance->motorController);
                     MotorController_Forward(
                         instance->motorController,
                         DistanceProviderCm_GetTicksFromCm(
@@ -326,11 +344,45 @@ void ScoutingController_Run(ScoutingController_t *instance)
 
                         if(openSpot.x == UINT8_MAX || openSpot.y == UINT8_MAX )
                         {
+                            instance->uTurnCount++;
+
+                            if(instance->uTurnCount ==  1)
+                            {
+                                ImageRecognitionController_RequestRecognition(
+                                    instance->imgRecognitionController,
+                                    instance->xpos,
+                                    instance->ypos);
+                                MotorController_Backward(
+                                    instance->motorController,
+                                    DistanceProviderCm_GetTicksFromCm(
+                                        instance->distanceProvider,
+                                        DistanceToMoveBackwardsToDetectImageCm));
+                                instance->state = DoNothing;
+                                TimerOneShot_Start(&instance->timerToWaitAfterFindingImage);
+                                break;
+                            }
+
                             instance->state = CompleteUTurn;
                             MotorController_ClearState(instance->motorController);
                             DistanceProviderCm_DisableDistanceTracking(instance->distanceProvider);
                             DistanceProviderCm_ClearDistance(instance->distanceProvider);
-                            MotorController_TurnLeft(instance->motorController, TicksForALeftTurn);
+
+                            DistanceInCm_t distToLeftWall =
+                                DistanceSensor_GetDistanceInCm(instance->leftSensor);
+
+                            DistanceInCm_t distToRightWall =
+                                DistanceSensor_GetDistanceInCm(instance->rightSensor);
+
+                            if(distToRightWall > distToLeftWall)
+                            {
+                                instance->uTurnDirection = UturnToTheLeft;
+                                MotorController_TurnLeft(instance->motorController, TicksForALeftTurn);
+                            }
+                            else
+                            {
+                                instance->uTurnDirection = UturnToTheRight;
+                                MotorController_TurnRight(instance->motorController, TicksForARightTurn);
+                            }
                         }
                         else
                         {
@@ -345,6 +397,11 @@ void ScoutingController_Run(ScoutingController_t *instance)
                 {
                     if(!MotorController_Busy(instance->motorController))
                     {
+                        if(instance->uTurnCount == 3)
+                        {
+                            instance->state = DoNothing;
+                            break;
+                        }
                         instance->state = StartForwardMotion;
                     }
                 }
@@ -366,6 +423,12 @@ void ScoutingController_Run(ScoutingController_t *instance)
     }
 }
 
+static void ChangeStateBackToGoingForward(void *context)
+{
+    RECAST(instance, context, ScoutingController_t *);
+    instance->state = StartForwardMotion;
+}
+
 void ScoutingController_Init(
     ScoutingController_t *instance,
     I_DistanceSensor_t *frontSensor,
@@ -378,23 +441,35 @@ void ScoutingController_Init(
     uint8_t startX,
     uint8_t startY,
     LcdDisplayController_t *lcd,
-    MapBuilder_t *mapBuilder)
+    MapBuilder_t *mapBuilder,
+    TimerModule_t *timerModule,
+    ImageRecognitionController_t *imgRecognitionController)
 {
-   GridMap_FirstQuadrant5cmCell3m2x3m2_Init(&instance->visitedAreasGrid);
-   GridMap_FirstQuadrant5cmCell3m2x3m2_Init(&instance->blockedAreasGrid);
-   instance->frontSensor = frontSensor;
-   instance->leftSensor = leftSensor;
-   instance->rightSensor = rightSensor;
-   instance->motorController = motorController;
-   instance->distanceProvider = distanceProvider;
-   instance->waypointProvider = unscoutedWaypointProvider;
-   instance->pathFinder = pathFinder;
-   instance->state = StartForwardMotion;
-   instance->start = false;
-   instance->currentHeading = CurrentHeading_N;
-   instance->runningDistance = 0;
-   instance->xpos = startX;
-   instance->ypos = startY;
-   instance->lcd = lcd;
-   instance->mapBuilder = mapBuilder;
+
+    instance->imgRecognitionController = imgRecognitionController;
+
+    TimerOneShot_Init(
+        &instance->timerToWaitAfterFindingImage,
+        timerModule,
+        TimeToWaitAfterFindingImageMs,
+        ChangeStateBackToGoingForward,
+        instance);
+    GridMap_FirstQuadrant5cmCell3m2x3m2_Init(&instance->visitedAreasGrid);
+    GridMap_FirstQuadrant5cmCell3m2x3m2_Init(&instance->blockedAreasGrid);
+    instance->frontSensor = frontSensor;
+    instance->leftSensor = leftSensor;
+    instance->rightSensor = rightSensor;
+    instance->motorController = motorController;
+    instance->distanceProvider = distanceProvider;
+    instance->waypointProvider = unscoutedWaypointProvider;
+    instance->pathFinder = pathFinder;
+    instance->state = StartForwardMotion;
+    instance->start = false;
+    instance->currentHeading = CurrentHeading_N;
+    instance->runningDistance = 0;
+    instance->xpos = startX;
+    instance->ypos = startY;
+    instance->lcd = lcd;
+    instance->mapBuilder = mapBuilder;
+    instance->uTurnCount = 0;
 }

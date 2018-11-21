@@ -15,7 +15,7 @@
 enum ControllerDirection
 {
     ControllerDirection_Forward = 0,
-    ControllerDirection_Backwards,
+    ControllerDirection_Backward,
     ControllerDirection_Left,
     ControllerDirection_Right,
 };
@@ -24,7 +24,7 @@ typedef uint8_t ControllerDirection_t;
 enum MotorDirection
 {
   MotorDirection_Forward = 0,
-  MotorDirection_Backwards
+  MotorDirection_Backward
 };
 typedef uint8_t MotorDirection_t;
 

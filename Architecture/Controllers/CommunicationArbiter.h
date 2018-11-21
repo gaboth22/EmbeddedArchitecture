@@ -11,6 +11,7 @@
 #include "ImageForwardingController.h"
 #include "TimerOneShot.h"
 #include "TimerModule.h"
+#include "ImageRecognitionController.h"
 
 typedef struct
 {
@@ -21,6 +22,7 @@ typedef struct
     EventSubscriber_Synchronous_t imageForwardedSub;
     EventSubscriber_Synchronous_t motionAcknowledgedSub;
     EventSubscriber_Synchronous_t sendMapsDoneSub;
+    EventSubscriber_Synchronous_t imageRecognizedSub;
     uint8_t state;
     uint8_t ack;
     uint8_t motionAckCount;
@@ -30,6 +32,7 @@ typedef struct
     uint8_t runningState;
     GridMap_FirstQuadrant5cmCell3m2x3m2_t *visited;
     GridMap_FirstQuadrant5cmCell3m2x3m2_t *blocked;
+    ImageRecognitionController_t *imgRecognitionController;
 } CommunicationArbiter_t;
 
 /*
@@ -42,7 +45,8 @@ void CommunicationArbiter_Init(
     MapSender_t *mapSender,
     GridMap_FirstQuadrant5cmCell3m2x3m2_t *visited,
     GridMap_FirstQuadrant5cmCell3m2x3m2_t *blocked,
-    TimerModule_t *timerModule);
+    TimerModule_t *timerModule,
+    ImageRecognitionController_t *imgRecognitionController);
 
 /*
  * Run the arbiter

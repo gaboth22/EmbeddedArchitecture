@@ -3,7 +3,7 @@
 
 enum
 {
-    TimeToPollEncodersMs = 100
+    TimeToPollEncodersMs = 170
 };
 
 static void IncreaseTickCount(void *context, void *args)

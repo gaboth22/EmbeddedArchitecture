@@ -5,9 +5,10 @@
 enum
 {
     ThresholToConsiderAWallInThatDirectionCm = 30,
-    RightThresholdToConsiderWallTooCloseCm = 14,
-    LeftThresholdToConsiderWallTooCloseCm = 15,
-    ForceCorrectionFactor = 14,
+    RightThresholdToConsiderWallTooCloseCm = 13,
+    LeftThresholdToConsiderWallTooCloseCm = 17,
+    LeftCorrectionFactor = 25,
+    RightCorrectionFactor = 27,
     OverFactor = 8,
     SmallFactor = 5
 };
@@ -21,24 +22,25 @@ int64_t MotorDriveCorrectionController_GetCorrectionFactor(MotorDriveCorrectionC
 
     int64_t factor = 0;
 
-    if(leftUltraSonicDistanceCm <= LeftThresholdToConsiderWallTooCloseCm)
-    {
-        return ForceCorrectionFactor;
-    }
-    else if(rightUltraSonicDistanceCm <= RightThresholdToConsiderWallTooCloseCm)
-    {
-        return -1 * ForceCorrectionFactor;
-    }
-    else if(leftUltraSonicDistanceCm < ThresholToConsiderAWallInThatDirectionCm &&
-            rightUltraSonicDistanceCm < ThresholToConsiderAWallInThatDirectionCm)
-    {
-//        factor = rightUltraSonicDistanceCm > leftUltraSonicDistanceCm ?
-//                TRUNCATE_U64_SUBSTRACTION(rightUltraSonicDistanceCm, leftUltraSonicDistanceCm) :
-//                -(TRUNCATE_U64_SUBSTRACTION(leftUltraSonicDistanceCm, rightUltraSonicDistanceCm));
+//    if(abs(leftUltraSonicDistanceCm - rightUltraSonicDistanceCm) > 4)
+//    {
+//        if(leftUltraSonicDistanceCm <= LeftThresholdToConsiderWallTooCloseCm)
+//        {
+//            factor = RightCorrectionFactor;
+//        }
+//        else if(rightUltraSonicDistanceCm <= RightThresholdToConsiderWallTooCloseCm)
+//        {
+//            factor = -1 * LeftCorrectionFactor;
+//        }
+//    }
 
-//        factor = (factor > 0) ? (factor + OverFactor) : (factor - OverFactor);
-
-        factor = rightUltraSonicDistanceCm > leftUltraSonicDistanceCm ? SmallFactor : -1 * SmallFactor;
+    if(leftUltraSonicDistanceCm <= 14)
+    {
+        factor = 30;
+    }
+    else if(rightUltraSonicDistanceCm <= 13)
+    {
+        factor = -1 * 30;
     }
 
     return factor;

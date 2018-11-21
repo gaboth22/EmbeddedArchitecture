@@ -85,7 +85,7 @@ static void RunPidForward(MotorController_t *instance)
     {
         Pwm_SetDutyCycle(instance->pwmLeftFwd, 0);
         Pwm_SetDutyCycle(instance->pwmLeftBwd, (uint8_t) (-1 * leftMotorPidOutput));
-        instance->leftMotorDirection = MotorDirection_Backwards;
+        instance->leftMotorDirection = MotorDirection_Backward;
     }
     else
     {
@@ -108,7 +108,7 @@ static void RunPidForward(MotorController_t *instance)
     {
         Pwm_SetDutyCycle(instance->pwmRightFwd, 0);
         Pwm_SetDutyCycle(instance->pwmRightBwd, (uint8_t) (-1 * rightMotorPidOutput));
-        instance->rightMotorDirection = MotorDirection_Backwards;
+        instance->rightMotorDirection = MotorDirection_Backward;
     }
     else
     {
@@ -123,6 +123,57 @@ static void RunPidForward(MotorController_t *instance)
     }
 }
 
+static void RunPidBackward(MotorController_t *instance)
+{
+    int64_t leftMotorPidOutput =
+        PidController_Run(instance->leftPid, instance->leftEncoderTick, instance->leftMotorDistanceToMove);
+    leftMotorPidOutput = GetSmoothedOutPidOutput(instance, leftMotorPidOutput);
+
+    int64_t correction =
+        MotorDriveCorrectionController_GetCorrectionFactor(instance->correctionController);
+
+    if(leftMotorPidOutput < 0)
+    {
+        Pwm_SetDutyCycle(instance->pwmLeftBwd, 0);
+        Pwm_SetDutyCycle(instance->pwmLeftFwd, (uint8_t) (-1 * leftMotorPidOutput));
+        instance->leftMotorDirection = MotorDirection_Backward;
+    }
+    else
+    {
+        if(correction < 0)
+        {
+            leftMotorPidOutput =
+                TRUNCATE_U64_SUBSTRACTION(leftMotorPidOutput, abs(correction));
+        }
+
+        Pwm_SetDutyCycle(instance->pwmLeftFwd, 0);
+        Pwm_SetDutyCycle(instance->pwmLeftBwd, (uint8_t)leftMotorPidOutput);
+        instance->leftMotorDirection = MotorDirection_Forward;
+    }
+
+    int64_t rightMotorPidOutput =
+        PidController_Run(instance->rightPid, instance->rightEncoderTick, instance->rightMotorDistanceToMove);
+    rightMotorPidOutput = GetSmoothedOutPidOutput(instance, rightMotorPidOutput);
+
+    if(rightMotorPidOutput < 0)
+    {
+        Pwm_SetDutyCycle(instance->pwmRightBwd, 0);
+        Pwm_SetDutyCycle(instance->pwmRightFwd, (uint8_t) (-1 * rightMotorPidOutput));
+        instance->rightMotorDirection = MotorDirection_Backward;
+    }
+    else
+    {
+        if(correction > 0)
+        {
+            rightMotorPidOutput = TRUNCATE_U64_SUBSTRACTION(rightMotorPidOutput, correction);
+        }
+
+        Pwm_SetDutyCycle(instance->pwmRightFwd, 0);
+        Pwm_SetDutyCycle(instance->pwmRightBwd, (uint8_t)rightMotorPidOutput);
+        instance->rightMotorDirection = MotorDirection_Forward;
+    }
+}
+
 static void RunPidRight(MotorController_t *instance)
 {
     int64_t leftMotorPidOutput = PidController_Run(instance->leftPid, instance->leftEncoderTick, instance->leftMotorDistanceToMove);
@@ -132,7 +183,7 @@ static void RunPidRight(MotorController_t *instance)
     {
         Pwm_SetDutyCycle(instance->pwmLeftFwd, 0);
         Pwm_SetDutyCycle(instance->pwmLeftBwd, (uint8_t) (-1 * leftMotorPidOutput));
-        instance->leftMotorDirection = MotorDirection_Backwards;
+        instance->leftMotorDirection = MotorDirection_Backward;
     }
     else
     {
@@ -148,7 +199,7 @@ static void RunPidRight(MotorController_t *instance)
     {
         Pwm_SetDutyCycle(instance->pwmRightBwd, 0);
         Pwm_SetDutyCycle(instance->pwmRightFwd, (uint8_t) (-1 * rightMotorPidOutput));
-        instance->rightMotorDirection = MotorDirection_Backwards;
+        instance->rightMotorDirection = MotorDirection_Backward;
     }
     else
     {
@@ -167,7 +218,7 @@ static void RunPidLeft(MotorController_t *instance)
     {
         Pwm_SetDutyCycle(instance->pwmLeftBwd, 0);
         Pwm_SetDutyCycle(instance->pwmLeftFwd, (uint8_t) (-1 * leftMotorPidOutput));
-        instance->leftMotorDirection = MotorDirection_Backwards; //move backwards with respect to PWM
+        instance->leftMotorDirection = MotorDirection_Backward; //move backwards with respect to PWM
     }
     else
     {
@@ -183,7 +234,7 @@ static void RunPidLeft(MotorController_t *instance)
     {
         Pwm_SetDutyCycle(instance->pwmRightFwd, 0);
         Pwm_SetDutyCycle(instance->pwmRightBwd, (uint8_t) (-1 * rightMotorPidOutput));
-        instance->rightMotorDirection = MotorDirection_Backwards; //move forward with respect to PWM
+        instance->rightMotorDirection = MotorDirection_Backward; //move forward with respect to PWM
     }
     else
     {
@@ -246,6 +297,21 @@ static void TurnLeft(I_MotorController_t *_instance, uint16_t distanceToMove)
     TimerPeriodic_Start(&instance->smoothStartupTimer);
 }
 
+static void Backward(I_MotorController_t *_instance, uint16_t distanceToMove)
+{
+    RECAST(instance, _instance, MotorController_t *);
+    MotorControllerBusyChecker_StartChecking(instance->busyChecker);
+    instance->busy = true;
+    instance->doSmoothStartup = true;
+    instance->stopSmoothnessTimer = false;
+    instance->runningSmoothnessFactor = instance->smoothnessFactor;
+    SetupDirection(instance, distanceToMove, distanceToMove - 3);
+    instance->controllerDirection = ControllerDirection_Backward;
+
+    TimerPeriodic_Command(&instance->smoothStartupTimer, TimerPeriodicCommand_Stop);
+    TimerPeriodic_Start(&instance->smoothStartupTimer);
+}
+
 static void Run(I_MotorController_t *_instance)
 {
     RECAST(instance, _instance, MotorController_t *);
@@ -262,6 +328,9 @@ static void Run(I_MotorController_t *_instance)
     {
         case ControllerDirection_Forward:
             RunPidForward(instance);
+            break;
+        case ControllerDirection_Backward:
+            RunPidBackward(instance);
             break;
         case ControllerDirection_Right:
             RunPidRight(instance);
@@ -301,7 +370,7 @@ static void ClearState(I_MotorController_t *_instance)
 }
 
 static const MotorControllerApi_t api =
-    { Run, Forward, TurnRight, TurnLeft, Busy, ClearState };
+    { Run, Forward, TurnRight, TurnLeft, Backward, Busy, ClearState };
 
 void MotorController_Init(
     MotorController_t *instance,
