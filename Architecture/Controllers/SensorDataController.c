@@ -4,7 +4,7 @@
 
 enum
 {
-    distanceCapCm = 50
+    DistanceCapCm = 50
 };
 
 static void Uint8To2LengthString(uint8_t data, char *buffer)
@@ -55,7 +55,7 @@ static void SensorDataOutputToLcd(void *context)
         case DistanceSensor_Left:
             LcdDisplayController_SetCursorIndex(instance->lcdDisplayController, 2, 0);
 
-            if(leftDistance < distanceCapCm)
+            if(leftDistance < DistanceCapCm)
             {
                 Uint8To2LengthString((uint8_t)leftDistance, &instance->leftDistanceIntToString[0]);
             }
@@ -68,7 +68,7 @@ static void SensorDataOutputToLcd(void *context)
         case DistanceSensor_Right:
             LcdDisplayController_SetCursorIndex(instance->lcdDisplayController, 2, 14);
 
-            if(rightDistance < distanceCapCm)
+            if(rightDistance < DistanceCapCm)
             {
                 Uint8To2LengthString((uint8_t)rightDistance, &instance->rightDistanceIntToString[0]);
             }
@@ -82,7 +82,7 @@ static void SensorDataOutputToLcd(void *context)
         case DistanceSensor_Front:
             LcdDisplayController_SetCursorIndex(instance->lcdDisplayController, 1, 7);
 
-            if(frontDistance < distanceCapCm)
+            if(frontDistance < DistanceCapCm)
             {
                 Uint8To2LengthString((uint8_t)frontDistance, &instance->frontDistanceIntToString[0]);
             }

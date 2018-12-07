@@ -16,6 +16,9 @@ enum
     FollowPath = 16,
     CompleteUTurn = 17,
     DoNothing = 20,
+    TurnAndLookAtImage = 25,
+    CompensateForMessedUpUTurn = 26,
+    FixMessedUpUTurn = 27,
 
     DistanceForOneCellCm = 5,
 
@@ -24,11 +27,11 @@ enum
     CurrentHeading_W = 2,
     CurrentHeading_E = 3,
 
-    ForwardDistanceThresholdForTurnCm = 23,
+    ForwardDistanceThresholdForTurnCm = 15,
     DistanceToKickForwardMotion = 300,
 
-    TicksForARightTurn = 88,
-    TicksForALeftTurn = 87,
+    TicksForARightTurn = 83,
+    TicksForALeftTurn = 81,
 
     DistanceToMoveBackwardsToDetectImageCm = 15,
 
@@ -39,7 +42,20 @@ enum
 
     DistanceToConsiderAWallInThatDirectionCm = 30,
 
-    TimeToWaitAfterFindingImageMs = 11000
+    TimeToWaitAfterFindingImageMs = 11500,
+
+    ThresholdToTurnTowardsImageCm = 14,
+    TicksToTurnTowardsImage = 14,
+
+    DistanceToConsiderAMessedUpUTurnCm = 40,
+
+    TicksToBackUpAfterMessedUpUTurn = 40,
+
+    DistanceToConsiderWallTooCloseAfterUTurnCm = 12,
+
+    TicksToFixHeadingAfterMessedUpUTurn = 14,
+
+    TickToDoBackAndForthRoutine = 60
 };
 
 void ScoutingController_Start(ScoutingController_t *instance)
@@ -348,16 +364,14 @@ void ScoutingController_Run(ScoutingController_t *instance)
 
                             if(instance->uTurnCount ==  1)
                             {
-                                ImageRecognitionController_RequestRecognition(
-                                    instance->imgRecognitionController,
-                                    instance->xpos,
-                                    instance->ypos);
+
                                 MotorController_Backward(
                                     instance->motorController,
                                     DistanceProviderCm_GetTicksFromCm(
                                         instance->distanceProvider,
                                         DistanceToMoveBackwardsToDetectImageCm));
-                                instance->state = DoNothing;
+
+                                instance->state = TurnAndLookAtImage;
                                 TimerOneShot_Start(&instance->timerToWaitAfterFindingImage);
                                 break;
                             }
@@ -397,6 +411,21 @@ void ScoutingController_Run(ScoutingController_t *instance)
                 {
                     if(!MotorController_Busy(instance->motorController))
                     {
+//                        DistanceInCm_t leftDistance =
+//                                DistanceSensor_GetDistanceInCm(instance->leftSensor);
+//                        DistanceInCm_t rightDistance =
+//                                DistanceSensor_GetDistanceInCm(instance->rightSensor);
+//                        if(leftDistance < 12)
+//                        {
+//                            MotorController_TurnRight(instance->motorController, 13);
+//                            break;
+//                        }
+//                        else if(rightDistance < 12)
+//                        {
+//                            MotorController_TurnLeft(instance->motorController, 13);
+//                            break;
+//                        }
+
                         if(instance->uTurnCount == 3)
                         {
                             instance->state = DoNothing;
@@ -412,7 +441,102 @@ void ScoutingController_Run(ScoutingController_t *instance)
                     if(!MotorController_Busy(instance->motorController))
                     {
                         DoCompleteUTurn(instance);
-                        instance->state = JustTurnTowardsDirection;
+                        instance->state = CompensateForMessedUpUTurn;
+                    }
+                }
+                break;
+
+            case CompensateForMessedUpUTurn:
+                {
+                    if(!MotorController_Busy(instance->motorController))
+                    {
+                        if(DistanceSensor_GetDistanceInCm(instance->frontSensor) < DistanceToConsiderAMessedUpUTurnCm)
+                        {
+                            instance->fixingRoutineFwd = true;
+                            MotorController_Backward(instance->motorController, TicksToBackUpAfterMessedUpUTurn);
+                        }
+
+                        instance->state = FixMessedUpUTurn;
+                    }
+                }
+                break;
+
+            case FixMessedUpUTurn:
+                {
+                    if(!MotorController_Busy(instance->motorController) && instance->uTurnCount < 3)
+                    {
+                        DistanceInCm_t lDist =
+                            DistanceSensor_GetDistanceInCm(instance->leftSensor);
+                        DistanceInCm_t rDist =
+                            DistanceSensor_GetDistanceInCm(instance->rightSensor);
+
+                        if(lDist > 30)
+                        {
+                            MotorController_TurnLeft(instance->motorController, 25);
+                            break;
+                        }
+                        else if(rDist > 30)
+                        {
+                            MotorController_TurnRight(instance->motorController, 25);
+                            break;
+                        }
+
+                        if(abs(lDist - rDist) > 6)
+                        {
+                            if(instance->fixingRoutineFwd)
+                            {
+                                instance->fixingRoutineFwd = false;
+                                MotorController_Forward(
+                                    instance->motorController,
+                                    TickToDoBackAndForthRoutine);
+                            }
+                            else
+                            {
+                                instance->fixingRoutineFwd = true;
+                                MotorController_Backward(
+                                    instance->motorController,
+                                    TickToDoBackAndForthRoutine - 10);
+                            }
+                        }
+                        else
+                        {
+//                            DistanceInCm_t frontDistance =
+//                                DistanceSensor_GetDistanceInCm(instance->frontSensor);
+//                            lDist = DistanceSensor_GetDistanceInCm(instance->leftSensor);
+//                            rDist = DistanceSensor_GetDistanceInCm(instance->rightSensor);
+//                            if(frontDistance < 25)
+//                            {
+//                                if(lDist < rDist)
+//                                {
+//                                    MotorController_TurnRight(instance->motorController, 10);
+//                                }
+//                                else
+//                                {
+//                                    MotorController_TurnLeft(instance->motorController, 10);
+//                                }
+//                                break;
+//                            }
+                            instance->state = JustTurnTowardsDirection;
+                        }
+                    }
+                }
+                break;
+
+            case TurnAndLookAtImage:
+                {
+                    if(!MotorController_Busy(instance->motorController))
+                    {
+                        instance->state = DoNothing;
+
+//                        if(DistanceSensor_GetDistanceInCm(instance->leftSensor) < ThresholdToTurnTowardsImageCm)
+//                        {
+//                            MotorController_TurnRight(instance->motorController, TicksToTurnTowardsImage);
+//                        }
+//
+//                        if(DistanceSensor_GetDistanceInCm(instance->rightSensor) < ThresholdToTurnTowardsImageCm)
+//                        {
+//                            MotorController_TurnLeft(instance->motorController, TicksToTurnTowardsImage);
+//                        }
                     }
                 }
                 break;

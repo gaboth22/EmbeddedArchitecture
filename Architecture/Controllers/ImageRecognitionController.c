@@ -59,23 +59,23 @@ I_Event_t * ImageRecognitionController_GetOnImageRecognizedEvent(
 
 void ImageRecognitionController_Run(ImageRecognitionController_t *instance)
 {
-    if(instance->uartAcquiredAllgood)
-    {
-        instance->uartAcquiredAllgood = false;
-        TimerPeriodic_Command(&instance->timerToAcquireUart, TimerPeriodicCommand_Stop);
-    }
-
-    if(instance->done)
-    {
-        instance->done = false;
-        TimerOneShot_Stop(&instance->timerToResetModule);
-        Event_Publish(&instance->onImageRecognized.interface, NULL);
-        Uart_Release(instance->wifiUart);
-    }
-    else
-    {
-        Event_Publish(&instance->onImageRecognized.interface, NULL);
-    }
+//    if(instance->uartAcquiredAllgood)
+//    {
+//        instance->uartAcquiredAllgood = false;
+//        TimerPeriodic_Command(&instance->timerToAcquireUart, TimerPeriodicCommand_Stop);
+//    }
+//
+//    if(instance->done)
+//    {
+//        instance->done = false;
+//        TimerOneShot_Stop(&instance->timerToResetModule);
+//        Event_Publish(&instance->onImageRecognized.interface, NULL);
+//        Uart_Release(instance->wifiUart);
+//    }
+//    else
+//    {
+//        Event_Publish(&instance->onImageRecognized.interface, NULL);
+//    }
 }
 
 static void TryToAcquireUart(void *context)
@@ -113,29 +113,29 @@ void ImageRecognitionController_Init(
     I_Uart_t *wifiUart,
     TimerModule_t *timerModule)
 {
-    instance->wifiUart = wifiUart;
-    instance->uartAcquiredAllgood = false;
-    instance->done = false;
-    instance->alreadySent = false;
-
-    Event_Synchronous_Init(&instance->onImageRecognized);
-
-    EventSubscriber_Synchronous_Init(
-        &instance->onByteReceivedSub,
-        InterpretAck,
-        instance);
-
-    TimerPeriodic_Init(
-        &instance->timerToAcquireUart,
-        timerModule,
-        PeriodToTryAndAcquireUartMs,
-        TryToAcquireUart,
-        instance);
-
-    TimerOneShot_Init(
-        &instance->timerToResetModule,
-        timerModule,
-        PeriodToResetModuleMs,
-        ResetModule,
-        instance);
+//    instance->wifiUart = wifiUart;
+//    instance->uartAcquiredAllgood = false;
+//    instance->done = false;
+//    instance->alreadySent = false;
+//
+//    Event_Synchronous_Init(&instance->onImageRecognized);
+//
+//    EventSubscriber_Synchronous_Init(
+//        &instance->onByteReceivedSub,
+//        InterpretAck,
+//        instance);
+//
+//    TimerPeriodic_Init(
+//        &instance->timerToAcquireUart,
+//        timerModule,
+//        PeriodToTryAndAcquireUartMs,
+//        TryToAcquireUart,
+//        instance);
+//
+//    TimerOneShot_Init(
+//        &instance->timerToResetModule,
+//        timerModule,
+//        PeriodToResetModuleMs,
+//        ResetModule,
+//        instance);
 }

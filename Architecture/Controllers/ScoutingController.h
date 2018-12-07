@@ -36,6 +36,7 @@ typedef struct
     uint8_t uTurnCount;
     TimerOneShot_t timerToWaitAfterFindingImage;
     ImageRecognitionController_t *imgRecognitionController;
+    bool fixingRoutineFwd;
 } ScoutingController_t;
 
 /*

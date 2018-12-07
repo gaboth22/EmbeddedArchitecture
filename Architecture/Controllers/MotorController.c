@@ -9,7 +9,7 @@ enum
 static void DoSmoothPwmStartup(void *context)
 {
     RECAST(instance, context, MotorController_t *);
-    instance->runningSmoothnessFactor -= 1;
+    instance->runningSmoothnessFactor -= 2;
 
     if(instance->runningSmoothnessFactor <= 0)
     {
@@ -177,7 +177,7 @@ static void RunPidBackward(MotorController_t *instance)
 static void RunPidRight(MotorController_t *instance)
 {
     int64_t leftMotorPidOutput = PidController_Run(instance->leftPid, instance->leftEncoderTick, instance->leftMotorDistanceToMove);
-    leftMotorPidOutput = GetSmoothedOutPidOutput(instance, leftMotorPidOutput);
+//    leftMotorPidOutput = GetSmoothedOutPidOutput(instance, leftMotorPidOutput);
 
     if(leftMotorPidOutput < 0)
     {
@@ -193,7 +193,7 @@ static void RunPidRight(MotorController_t *instance)
     }
 
     int64_t rightMotorPidOutput = PidController_Run(instance->rightPid, instance->rightEncoderTick, instance->rightMotorDistanceToMove);
-    rightMotorPidOutput = GetSmoothedOutPidOutput(instance, rightMotorPidOutput);
+//    rightMotorPidOutput = GetSmoothedOutPidOutput(instance, rightMotorPidOutput);
 
     if(rightMotorPidOutput < 0)
     {
@@ -212,7 +212,7 @@ static void RunPidRight(MotorController_t *instance)
 static void RunPidLeft(MotorController_t *instance)
 {
     int64_t leftMotorPidOutput = PidController_Run(instance->leftPid, instance->leftEncoderTick, instance->leftMotorDistanceToMove);
-    leftMotorPidOutput = GetSmoothedOutPidOutput(instance, leftMotorPidOutput);
+//    leftMotorPidOutput = GetSmoothedOutPidOutput(instance, leftMotorPidOutput);
 
     if(leftMotorPidOutput < 0)
     {
@@ -228,7 +228,7 @@ static void RunPidLeft(MotorController_t *instance)
     }
 
     int64_t rightMotorPidOutput = PidController_Run(instance->rightPid, instance->rightEncoderTick, instance->rightMotorDistanceToMove);
-    rightMotorPidOutput = GetSmoothedOutPidOutput(instance, rightMotorPidOutput);
+//    rightMotorPidOutput = GetSmoothedOutPidOutput(instance, rightMotorPidOutput);
 
     if(rightMotorPidOutput < 0)
     {
@@ -278,8 +278,8 @@ static void TurnRight(I_MotorController_t *_instance, uint16_t distanceToMove)
     SetupDirection(instance, distanceToMove, distanceToMove - 15);
     instance->controllerDirection = ControllerDirection_Right;
 
-    TimerPeriodic_Command(&instance->smoothStartupTimer, TimerPeriodicCommand_Stop);
-    TimerPeriodic_Start(&instance->smoothStartupTimer);
+//    TimerPeriodic_Command(&instance->smoothStartupTimer, TimerPeriodicCommand_Stop);
+//    TimerPeriodic_Start(&instance->smoothStartupTimer);
 }
 
 static void TurnLeft(I_MotorController_t *_instance, uint16_t distanceToMove)
@@ -293,8 +293,8 @@ static void TurnLeft(I_MotorController_t *_instance, uint16_t distanceToMove)
     SetupDirection(instance, distanceToMove, distanceToMove - 15);
     instance->controllerDirection = ControllerDirection_Left;
 
-    TimerPeriodic_Command(&instance->smoothStartupTimer, TimerPeriodicCommand_Stop);
-    TimerPeriodic_Start(&instance->smoothStartupTimer);
+//    TimerPeriodic_Command(&instance->smoothStartupTimer, TimerPeriodicCommand_Stop);
+//    TimerPeriodic_Start(&instance->smoothStartupTimer);
 }
 
 static void Backward(I_MotorController_t *_instance, uint16_t distanceToMove)

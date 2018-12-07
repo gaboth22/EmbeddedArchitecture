@@ -2,17 +2,6 @@
 #include "TimerPeriodic.h"
 #include "utils.h"
 
-enum
-{
-    ThresholToConsiderAWallInThatDirectionCm = 30,
-    RightThresholdToConsiderWallTooCloseCm = 13,
-    LeftThresholdToConsiderWallTooCloseCm = 17,
-    LeftCorrectionFactor = 25,
-    RightCorrectionFactor = 27,
-    OverFactor = 8,
-    SmallFactor = 5
-};
-
 int64_t MotorDriveCorrectionController_GetCorrectionFactor(MotorDriveCorrectionController_t *instance)
 {
     DistanceInCm_t leftUltraSonicDistanceCm =
@@ -22,25 +11,22 @@ int64_t MotorDriveCorrectionController_GetCorrectionFactor(MotorDriveCorrectionC
 
     int64_t factor = 0;
 
-//    if(abs(leftUltraSonicDistanceCm - rightUltraSonicDistanceCm) > 4)
-//    {
-//        if(leftUltraSonicDistanceCm <= LeftThresholdToConsiderWallTooCloseCm)
-//        {
-//            factor = RightCorrectionFactor;
-//        }
-//        else if(rightUltraSonicDistanceCm <= RightThresholdToConsiderWallTooCloseCm)
-//        {
-//            factor = -1 * LeftCorrectionFactor;
-//        }
-//    }
-
-    if(leftUltraSonicDistanceCm <= 14)
+    if(leftUltraSonicDistanceCm <= 15)
     {
-        factor = 30;
+        factor = 16;
     }
-    else if(rightUltraSonicDistanceCm <= 13)
+    if(leftUltraSonicDistanceCm <= 12)
     {
-        factor = -1 * 30;
+        factor = 32;
+    }
+
+    if(rightUltraSonicDistanceCm <= 15)
+    {
+        factor = -1 * 12;
+    }
+    else if(rightUltraSonicDistanceCm <= 12)
+    {
+        factor = -1 * 25;
     }
 
     return factor;
